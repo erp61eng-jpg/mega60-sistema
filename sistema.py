@@ -2,10 +2,10 @@ import streamlit as st
 import streamlit.components.v1 as components
 import requests
 from itertools import combinations
-from collections import Contra 
+from collections import Counter
 import math
 import time
-import rea
+import re
 import json
 import io
 import traceback
@@ -27,7 +27,7 @@ st.set_page_config(
 # ==============================================================================
 try:
     # ESTILIZAÇÃO CSS: FONTE MAIOR, TUDO PRETO E ALTO CONTRASTE (ZERO VERDE)
-    st.markdown("""
+    st.markdown('''
     <style>
         html, body, [class*="css"], .stMarkdown, p, span, label, div, input, textarea, select {
             color: #000000 !important;
@@ -120,7 +120,7 @@ try:
             padding: 2px 6px !important;
         }
     </style>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
     # ==============================================================================
     # CONSTANTES E ESTRUTURA DA MATRIZ 6x10
@@ -580,7 +580,8 @@ try:
             testadas += 1
 
             if validar_aposta_final_6(comb, cfg):
-                jogos_aprovados.append(list(comb))
+                # Sempre ordenado do menor para o maior
+                jogos_aprovados.append(sorted(list(comb)))
                 if teto_max is not None and len(jogos_aprovados) >= teto_max:
                     break
 
@@ -634,7 +635,7 @@ try:
             placar[qtd].append(idx + 1)
             relatorio.append({
                 "num_aposta": idx + 1,
-                "jogo": jogo,
+                "jogo": sorted(jogo),
                 "qtd_acertos": qtd,
                 "acertos": acertos
             })
@@ -649,12 +650,12 @@ try:
             for n in dezenas
         ])
         st.markdown(
-            f"""
+            f'''
             <div style="background:#ffffff;border:4px solid #000000;border-radius:12px;padding:16px;margin:12px 0;text-align:center;">
                 <div style="font-weight:900;color:#000000;font-size:18px;margin-bottom:10px;text-transform:uppercase;">🏆 {titulo}</div>
                 <div style="display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px;">{bolas_html}</div>
             </div>
-            """,
+            ''',
             unsafe_allow_html=True
         )
 
@@ -674,7 +675,7 @@ try:
                 else:
                     celulas += f'<div style="width:42px;height:42px;background:#ffffff;color:#000000;border:1px solid #000000;font-weight:900;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:15px;">{n:02d}</div>'
 
-        html = f"""
+        html = f'''
         <!DOCTYPE html><html><head><meta charset="utf-8">
         <style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;display:flex;justify-content:center;background:transparent;font-family:Arial,sans-serif;}}
         .box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:12px;width:fit-content;}}
@@ -686,7 +687,7 @@ try:
             <span style="background:#38bdf8;padding:3px 10px;border:2px solid #000000;border-radius:4px;">■ Jogado</span>
             <span style="background:#ffffff;padding:3px 10px;border:2px dashed #000000;border-radius:4px;">□ Sorteado</span>
         </div></div></body></html>
-        """
+        '''
         components.html(html, height=390, scrolling=False)
 
     # ==============================================================================
@@ -1065,7 +1066,7 @@ try:
                 detalhes_audit = f"• Total de Dezenas: {lt['qtd_dezenas']}<br>• Dezenas: {dezenas_formatadas}"
 
             st.markdown(
-                f"""
+                f'''
                 <div style="background:#ffffff;border:4px solid #000000;border-radius:8px;padding:16px;margin-bottom:15px;">
                     <div style="font-weight:900;color:#000000;font-size:16px;">
                         STATUS DA LINHA: {lt['status']} ({lt['nome']}) | 🕒 {lt['timestamp']}
@@ -1074,7 +1075,7 @@ try:
                         {detalhes_audit}
                     </div>
                 </div>
-                """,
+                ''',
                 unsafe_allow_html=True
             )
 
@@ -1135,180 +1136,180 @@ try:
                         except Exception as e:
                             st.error(f"Erro ao ler JSON: {e}")
 
-        st.divider()
-        opcoes_nomes = list(OPCOES_QUANTIDADE.keys())
+            st.divider()
+            opcoes_nomes = list(OPCOES_QUANTIDADE.keys())
 
-        with st.container(border=True):
-            st.markdown("#### 1️⃣ LINHAS INDIVIDUAIS (L01 a L06)")
-            cols_l = st.columns(6)
-            limites_linhas = []
-            for r in range(6):
-                with cols_l[r]:
-                    val_padrao = st.session_state.get(f"sel_l_{r}", "0 a 2")
-                    idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                    esc = st.selectbox(f"Linha {r+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_l_{r}")
-                    limites_linhas.append(OPCOES_QUANTIDADE[esc])
-
-        with st.container(border=True):
-            st.markdown("#### 2️⃣ COLUNAS INDIVIDUAIS (C01 a C10)")
-            cols_c_up, cols_c_dw = st.columns(5), st.columns(5)
-            limites_colunas = []
-            for c in range(10):
-                alvo = cols_c_up[c] if c < 5 else cols_c_dw[c - 5]
-                with alvo:
-                    val_padrao = st.session_state.get(f"sel_c_{c}", "0 a 2")
-                    idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                    esc = st.selectbox(f"Coluna {c+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_c_{c}")
-                    limites_colunas.append(OPCOES_QUANTIDADE[esc])
-
-        c_diag1, c_diag2 = st.columns(2)
-        with c_diag1:
             with st.container(border=True):
-                st.markdown("#### 3️⃣ DIAGONAIS CRESCENTES (DC01 a DC10 /)")
-                with st.expander("Expandir Diagonais Crescentes", expanded=False):
-                    limites_dc = []
-                    for d in range(10):
-                        val_padrao = st.session_state.get(f"sel_dc_{d}", "0 a 2")
+                st.markdown("#### 1️⃣ LINHAS INDIVIDUAIS (L01 a L06)")
+                cols_l = st.columns(6)
+                limites_linhas = []
+                for r in range(6):
+                    with cols_l[r]:
+                        val_padrao = st.session_state.get(f"sel_l_{r}", "0 a 2")
                         idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                        esc = st.selectbox(f"DC{d+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_dc_{d}")
-                        limites_dc.append(OPCOES_QUANTIDADE[esc])
-        with c_diag2:
+                        esc = st.selectbox(f"Linha {r+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_l_{r}")
+                        limites_linhas.append(OPCOES_QUANTIDADE[esc])
+
             with st.container(border=True):
-                st.markdown("#### 4️⃣ DIAGONAIS DECRESCENTES (DD01 a DD10 \\)")
-                with st.expander("Expandir Diagonais Decrescentes", expanded=False):
-                    limites_dd = []
-                    for d in range(10):
-                        val_padrao = st.session_state.get(f"sel_dd_{d}", "0 a 2")
+                st.markdown("#### 2️⃣ COLUNAS INDIVIDUAIS (C01 a C10)")
+                cols_c_up, cols_c_dw = st.columns(5), st.columns(5)
+                limites_colunas = []
+                for c in range(10):
+                    alvo = cols_c_up[c] if c < 5 else cols_c_dw[c - 5]
+                    with alvo:
+                        val_padrao = st.session_state.get(f"sel_c_{c}", "0 a 2")
                         idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                        esc = st.selectbox(f"DD{d+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_dd_{d}")
-                        limites_dd.append(OPCOES_QUANTIDADE[esc])
+                        esc = st.selectbox(f"Coluna {c+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_c_{c}")
+                        limites_colunas.append(OPCOES_QUANTIDADE[esc])
 
-        with st.container(border=True):
-            st.markdown("#### 5️⃣ PRIMOS, PARES, MOLDURA E FAIXA DE SOMA")
-            c_p1, c_p2, c_p3, c_p4 = st.columns(4)
-            with c_p1:
-                primos_sel = st.multiselect("Quantidade de Primos:", list(range(7)), default=st.session_state.get("sel_primos", [3]), key="sel_primos")
-            with c_p2:
-                opcoes_par = {"3P / 3I": 3, "2P / 4I": 2, "4P / 2I": 4, "1P / 5I": 1, "5P / 1I": 5, "0P / 6I": 0, "6P / 0I": 6}
-                par_sel = st.multiselect("Pares / Ímpares:", list(opcoes_par.keys()), default=st.session_state.get("sel_pares", ["2P / 4I"]), key="sel_pares")
-                pares_valores = {opcoes_par[k] for k in par_sel}
-            with c_p3:
-                moldura_sel = st.multiselect("Dezenas na Moldura:", list(range(7)), default=st.session_state.get("sel_moldura", [5]), key="sel_moldura")
-            with c_p4:
-                val_soma_estado = st.session_state.get("sel_soma", (150, 190))
-                if isinstance(val_soma_estado, (list, tuple)) and len(val_soma_estado) == 2:
-                    soma_min_val = int(val_soma_estado[0])
-                    soma_max_val = int(val_soma_estado[1])
-                else:
-                    soma_min_val, soma_max_val = 150, 190
+            c_diag1, c_diag2 = st.columns(2)
+            with c_diag1:
+                with st.container(border=True):
+                    st.markdown("#### 3️⃣ DIAGONAIS CRESCENTES (DC01 a DC10 /)")
+                    with st.expander("Expandir Diagonais Crescentes", expanded=False):
+                        limites_dc = []
+                        for d in range(10):
+                            val_padrao = st.session_state.get(f"sel_dc_{d}", "0 a 2")
+                            idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
+                            esc = st.selectbox(f"DC{d+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_dc_{d}")
+                            limites_dc.append(OPCOES_QUANTIDADE[esc])
+            with c_diag2:
+                with st.container(border=True):
+                    st.markdown("#### 4️⃣ DIAGONAIS DECRESCENTES (DD01 a DD10 \\)")
+                    with st.expander("Expandir Diagonais Decrescentes", expanded=False):
+                        limites_dd = []
+                        for d in range(10):
+                            val_padrao = st.session_state.get(f"sel_dd_{d}", "0 a 2")
+                            idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
+                            esc = st.selectbox(f"DD{d+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_dd_{d}")
+                            limites_dd.append(OPCOES_QUANTIDADE[esc])
 
-                faixa_soma = st.slider(
-                    "Faixa de Soma:",
-                    min_value=50,
-                    max_value=320,
-                    value=(soma_min_val, soma_max_val),
-                    key="sel_soma"
+            with st.container(border=True):
+                st.markdown("#### 5️⃣ PRIMOS, PARES, MOLDURA E FAIXA DE SOMA")
+                c_p1, c_p2, c_p3, c_p4 = st.columns(4)
+                with c_p1:
+                    primos_sel = st.multiselect("Quantidade de Primos:", list(range(7)), default=st.session_state.get("sel_primos", [3]), key="sel_primos")
+                with c_p2:
+                    opcoes_par = {"3P / 3I": 3, "2P / 4I": 2, "4P / 2I": 4, "1P / 5I": 1, "5P / 1I": 5, "0P / 6I": 0, "6P / 0I": 6}
+                    par_sel = st.multiselect("Pares / Ímpares:", list(opcoes_par.keys()), default=st.session_state.get("sel_pares", ["2P / 4I"]), key="sel_pares")
+                    pares_valores = {opcoes_par[k] for k in par_sel}
+                with c_p3:
+                    moldura_sel = st.multiselect("Dezenas na Moldura:", list(range(7)), default=st.session_state.get("sel_moldura", [5]), key="sel_moldura")
+                with c_p4:
+                    val_soma_estado = st.session_state.get("sel_soma", (150, 190))
+                    if isinstance(val_soma_estado, (list, tuple)) and len(val_soma_estado) == 2:
+                        soma_min_val = int(val_soma_estado[0])
+                        soma_max_val = int(val_soma_estado[1])
+                    else:
+                        soma_min_val, soma_max_val = 150, 190
+
+                    faixa_soma = st.slider(
+                        "Faixa de Soma:",
+                        min_value=50,
+                        max_value=320,
+                        value=(soma_min_val, soma_max_val),
+                        key="sel_soma"
+                    )
+
+            config_total = {
+                "linhas": limites_linhas,
+                "colunas": limites_colunas,
+                "diag_cresc": limites_dc,
+                "diag_decresc": limites_dd,
+                "primos_aceitos": set(primos_sel),
+                "pares_aceitos": pares_valores,
+                "moldura_aceita": set(moldura_sel),
+                "faixa_soma": faixa_soma
+            }
+
+            st.divider()
+
+            st.markdown("#### ⚙️ CONTROLE DE EXECUÇÃO")
+            c_ctrl1, c_ctrl2 = st.columns([2, 2])
+            with c_ctrl1:
+                sem_limite = st.checkbox(
+                    "♾️ SEM LIMITE (GERAR TODAS AS APROVADAS)",
+                    value=True
                 )
-
-        config_total = {
-            "linhas": limites_linhas,
-            "colunas": limites_colunas,
-            "diag_cresc": limites_dc,
-            "diag_decresc": limites_dd,
-            "primos_aceitos": set(primos_sel),
-            "pares_aceitos": pares_valores,
-            "moldura_aceita": set(moldura_sel),
-            "faixa_soma": faixa_soma
-        }
-
-        st.divider()
-
-        st.markdown("#### ⚙️ CONTROLE DE EXECUÇÃO")
-        c_ctrl1, c_ctrl2 = st.columns([2, 2])
-        with c_ctrl1:
-            sem_limite = st.checkbox(
-                "♾️ SEM LIMITE (GERAR TODAS AS APROVADAS)",
-                value=True
-            )
-        with c_ctrl2:
-            if not sem_limite:
-                teto_apostas = st.number_input(
-                    "Teto Máximo de Jogos:",
-                    min_value=1,
-                    max_value=2000000,
-                    value=5000,
-                    step=500
-                )
-            else:
-                teto_apostas = None
-                st.info("Teto desativado: Todas as combinações válidas serão calculadas.")
-
-        placeholder_metricas = st.empty()
-        barra_progresso = st.progress(0, text="Pronto para processar...")
-
-        pode_processar = len(st.session_state.pool_trabalho) >= 6
-
-        col_btn_gen, col_btn_raw = st.columns(2)
-        with col_btn_gen:
-            if st.button("🚀 GERAR E FILTRAR APOSTAS", use_container_width=True, disabled=not pode_processar, type="primary"):
-                if not primos_sel or not par_sel or not moldura_sel:
-                    st.error("Selecione os parâmetros de Primos, Pares e Moldura.")
+            with c_ctrl2:
+                if not sem_limite:
+                    teto_apostas = st.number_input(
+                        "Teto Máximo de Jogos:",
+                        min_value=1,
+                        max_value=2000000,
+                        value=5000,
+                        step=500
+                    )
                 else:
-                    with st.spinner("🛠️ Processando Motor Combinatório..."):
-                        t0 = time.time()
-                        resultados = executar_varredura_pool(
-                            st.session_state.pool_trabalho,
-                            config_total,
-                            barra_progresso,
-                            placeholder_metricas,
-                            teto_max=teto_apostas
-                        )
-                        t_fim = time.time() - t0
-                        st.session_state.jogos_aprovados = resultados
-                        total_gerado = len(resultados)
+                    teto_apostas = None
+                    st.info("Teto desativado: Todas as combinações válidas serão calculadas.")
 
-                        if total_gerado > 0:
-                            st.success(f"✅ Sucesso: {total_gerado:,} apostas geradas em {t_fim:.2f}s.")
-                        else:
-                            st.warning(f"⚠️ Nenhuma combinação atendeu aos filtros selecionados em {t_fim:.2f}s.")
+            placeholder_metricas = st.empty()
+            barra_progresso = st.progress(0, text="Pronto para processar...")
 
-        with col_btn_raw:
-            k_pool = len(st.session_state.pool_trabalho)
-            comb_totais_pool = math.comb(k_pool, 6) if k_pool >= 6 else 0
-            if st.button(f"📦 EXPORTAR POOL BRUTO ({comb_totais_pool:,} JOGOS)", use_container_width=True, disabled=not pode_processar):
-                with st.spinner("Gerando arquivo..."):
-                    dezenas_cands = sorted(list(st.session_state.pool_trabalho))
-                    buffer_txt = io.StringIO()
-                    for c in combinations(dezenas_cands, 6):
-                        buffer_txt.write(" ".join([f"{n:02d}" for n in c]) + "\n")
-                    st.session_state["raw_pool_file"] = buffer_txt.getvalue()
-                    st.success("Pool bruto gerado!")
+            pode_processar = len(st.session_state.pool_trabalho) >= 6
 
-        if "raw_pool_file" in st.session_state:
-            st.download_button(
-                "💾 BAIXAR ARQUIVO DO POOL BRUTO (.TXT)",
-                data=st.session_state["raw_pool_file"],
-                file_name=f"mega60_pool_bruto_{len(st.session_state.pool_trabalho)}dezenas.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
+            col_btn_gen, col_btn_raw = st.columns(2)
+            with col_btn_gen:
+                if st.button("🚀 GERAR E FILTRAR APOSTAS", use_container_width=True, disabled=not pode_processar, type="primary"):
+                    if not primos_sel or not par_sel or not moldura_sel:
+                        st.error("Selecione os parâmetros de Primos, Pares e Moldura.")
+                    else:
+                        with st.spinner("🛠️ Processando Motor Combinatório..."):
+                            t0 = time.time()
+                            resultados = executar_varredura_pool(
+                                st.session_state.pool_trabalho,
+                                config_total,
+                                barra_progresso,
+                                placeholder_metricas,
+                                teto_max=teto_apostas
+                            )
+                            t_fim = time.time() - t0
+                            st.session_state.jogos_aprovados = resultados
+                            total_gerado = len(resultados)
 
-        if st.session_state.jogos_aprovados:
-            qtd_aprov = len(st.session_state.jogos_aprovados)
-            st.success(f"Total Aprovado: {qtd_aprov:,} apostas geradas (menor para o maior).")
-            txt_saida = "\n".join([" ".join([f"{n:02d}" for n in j]) for j in st.session_state.jogos_aprovados])
+                            if total_gerado > 0:
+                                st.success(f"✅ Sucesso: {total_gerado:,} apostas geradas em {t_fim:.2f}s.")
+                            else:
+                                st.warning(f"⚠️ Nenhuma combinação atendeu aos filtros selecionados em {t_fim:.2f}s.")
 
-            c_d1, c_d2 = st.columns([3, 1])
-            with c_d1:
+            with col_btn_raw:
+                k_pool = len(st.session_state.pool_trabalho)
+                comb_totais_pool = math.comb(k_pool, 6) if k_pool >= 6 else 0
+                if st.button(f"📦 EXPORTAR POOL BRUTO ({comb_totais_pool:,} JOGOS)", use_container_width=True, disabled=not pode_processar):
+                    with st.spinner("Gerando arquivo..."):
+                        dezenas_cands = sorted(list(st.session_state.pool_trabalho))
+                        buffer_txt = io.StringIO()
+                        for c in combinations(dezenas_cands, 6):
+                            buffer_txt.write(" ".join([f"{n:02d}" for n in sorted(c)]) + "\n")
+                        st.session_state["raw_pool_file"] = buffer_txt.getvalue()
+                        st.success("Pool bruto gerado!")
+
+            if "raw_pool_file" in st.session_state:
                 st.download_button(
-                    "📥 BAIXAR JOGOS APROVADOS (.TXT)",
-                    data=txt_saida,
-                    file_name=f"mega60_apostas_filtradas_{qtd_aprov}.txt",
+                    "💾 BAIXAR ARQUIVO DO POOL BRUTO (.TXT)",
+                    data=st.session_state["raw_pool_file"],
+                    file_name=f"mega60_pool_bruto_{len(st.session_state.pool_trabalho)}dezenas.txt",
                     mime="text/plain",
                     use_container_width=True
                 )
-            with c_d2:
-                st.metric("Apostas Prontas", f"{qtd_aprov:,}")
+
+            if st.session_state.jogos_aprovados:
+                qtd_aprov = len(st.session_state.jogos_aprovados)
+                st.success(f"Total Aprovado: {qtd_aprov:,} apostas geradas (menor para o maior).")
+                txt_saida = "\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_aprovados])
+
+                c_d1, c_d2 = st.columns([3, 1])
+                with c_d1:
+                    st.download_button(
+                        "📥 BAIXAR JOGOS APROVADOS (.TXT)",
+                        data=txt_saida,
+                        file_name=f"mega60_apostas_filtradas_{qtd_aprov}.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    )
+                with c_d2:
+                    st.metric("Apostas Prontas", f"{qtd_aprov:,}")
 
     # ==============================================================================
     # ABA 3: VOLANTE VISUAL & RAIO-X
@@ -1334,14 +1335,14 @@ try:
                         else:
                             celulas += f'<div style="width:42px;height:42px;background:#ffffff;color:#000000;border:1px solid #000000;font-weight:900;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:16px;">{n:02d}</div>'
 
-                html_cartela = f"""
+                html_cartela = f'''
                 <!DOCTYPE html><html><head><meta charset="utf-8">
                 <style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;display:flex;justify-content:center;background:transparent;font-family:Arial,sans-serif;}}
                 .box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:12px;width:fit-content;}}
                 .grid{{display:grid;grid-template-columns:repeat(10,42px);gap:5px;}}</style></head><body>
-                <div class="box"><div style="font-weight:900;font-size:16px;margin-bottom:10px;color:#000000;text-align:center;">JOGO #{sel_idx:04d}: {' - '.join([f'{n:02d}' for n in jogo_ativo])}</div>
+                <div class="box"><div style="font-weight:900;font-size:16px;margin-bottom:10px;color:#000000;text-align:center;">JOGO #{sel_idx:04d}: {" - ".join([f"{n:02d}" for n in jogo_ativo])}</div>
                 <div class="grid">{celulas}</div></div></body></html>
-                """
+                '''
                 components.html(html_cartela, height=360, scrolling=False)
 
             with c_v2:
@@ -1401,7 +1402,7 @@ try:
 
                 if st.session_state.jogos_filtrados_upload:
                     qtd_flt = len(st.session_state.jogos_filtrados_upload)
-                    txt_flt = "\n".join([" ".join([f"{n:02d}" for n in j]) for j in st.session_state.jogos_filtrados_upload])
+                    txt_flt = "\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_filtrados_upload])
                     with c_flt2:
                         st.download_button(
                             f"💾 BAIXAR LOTE FILTRADO ({qtd_flt:,} JOGOS)",
@@ -1506,7 +1507,7 @@ try:
     # ==============================================================================
     # ABA 5: HISTÓRICO & API CAIXA
     # ==============================================================================
-    with tab_historico:
+    with tab5:
         st.subheader("BASE DE CONCURSOS OFICIAIS")
         st.markdown(f"**Total em memória:** `{len(st.session_state.historico)}` ({st.session_state.origem})")
 
