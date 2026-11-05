@@ -975,120 +975,59 @@ with tab_config:
                         st.session_state.input_dezenas_digitadas_texto = " ".join([f"{n:02d}" for n in sorted(st.session_state.historico[-1])])
                         st.rerun()
 
-    # Predefinições e Abas Restantes
+   # Gerenciador de Predefinições e Gravação Manual
     with st.container(border=True):
-        st.markdown("#### 💾 GERENCIADOR DE PREDEFINIÇÕES")
-        lista_nomes = list(st.session_state.presets_filtros.keys())
-        filtro_escolhido = st.selectbox("Carregar Filtro Salvo:", lista_nomes, index=0, key="select_preset_load")
-        if st.button("🚀 APLICAR PREDEFINIÇÃO", use_container_width=True):
-            aplicar_preset(filtro_escolhido)
-            st.success(f"Filtro '{filtro_escolhido}' carregado!")
-            st.rerun()
+        st.markdown("#### 💾 GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO")
+        col_puxar, col_gravar = st.columns(2)
 
-    st.divider()
-    opcoes_nomes = list(OPCOES_QUANTIDADE.keys())
-    with st.container(border=True):
-        st.markdown("#### 1️⃣ LINHAS INDIVIDUAIS (L01 a L06)")
-        cols_l = st.columns(6)
-        limites_linhas = []
-        for r in range(6):
-            with cols_l[r]:
-                val_padrao = st.session_state.get(f"sel_l_{r}", "0 a 2")
-                idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                esc = st.selectbox(f"Linha {r+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_l_{r}")
-                limites_linhas.append(OPCOES_QUANTIDADE[esc])
+        with col_puxar:
+            lista_nomes = list(st.session_state.presets_filtros.keys())
+            filtro_escolhido = st.selectbox("Carregar Filtro Salvo:", lista_nomes, index=0, key="select_preset_load")
 
-    with st.container(border=True):
-        st.markdown("#### 2️⃣ COLUNAS INDIVIDUAIS (C01 a C10)")
-        cols_c_up, cols_c_dw = st.columns(5), st.columns(5)
-        limites_colunas = []
-        for c in range(10):
-            alvo = cols_c_up[c] if c < 5 else cols_c_dw[c - 5]
-            with alvo:
-                val_padrao = st.session_state.get(f"sel_c_{c}", "0 a 2")
-                idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                esc = st.selectbox(f"Coluna {c+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_c_{c}")
-                limites_colunas.append(OPCOES_QUANTIDADE[esc])
+            c_pux1, c_pux2 = st.columns(2)
+            with c_pux1:
+                if st.button("🚀 APLICAR PREDEFINIÇÃO", use_container_width=True):
+                    aplicar_preset(filtro_escolhido)
+                    st.success(f"Filtro '{filtro_escolhido}' carregado!")
+                    st.rerun()
+            with c_pux2:
+                json_presets = json.dumps(st.session_state.presets_filtros, indent=2, ensure_ascii=False)
+                st.download_button(
+                    "💾 BAIXAR (.JSON)",
+                    data=json_presets,
+                    file_name="meus_filtros_mega60.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
 
-    c_diag1, c_diag2 = st.columns(2)
-    with c_diag1:
-        with st.container(border=True):
-            st.markdown("#### 3️⃣ DIAGONAIS CRESCENTES (DC01 a DC10 /)")
-            with st.expander("Expandir Diagonais Crescentes", expanded=False):
-                limites_dc = []
-                for d in range(10):
-                    val_padrao = st.session_state.get(f"sel_dc_{d}", "0 a 2")
-                    idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                    esc = st.selectbox(f"DC{d+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_dc_{d}")
-                    limites_dc.append(OPCOES_QUANTIDADE[esc])
-    with c_diag2:
-        with st.container(border=True):
-            st.markdown("#### 4️⃣ DIAGONAIS DECRESCENTES (DD01 a DD10 \\)")
-            with st.expander("Expandir Diagonais Decrescentes", expanded=False):
-                limites_dd = []
-                for d in range(10):
-                    val_padrao = st.session_state.get(f"sel_dd_{d}", "0 a 2")
-                    idx_sel = opcoes_nomes.index(val_padrao) if val_padrao in opcoes_nomes else 0
-                    esc = st.selectbox(f"DD{d+1:02d}", opcoes_nomes, index=idx_sel, key=f"sel_dd_{d}")
-                    limites_dd.append(OPCOES_QUANTIDADE[esc])
+        with col_gravar:
+            nome_novo_filtro = st.text_input("Nome da Nova Configuração:", placeholder="Ex: Meu Filtro Top", key="input_nome_filtro_manual")
 
-    with st.container(border=True):
-        st.markdown("#### 5️⃣ PRIMOS, PARES, MOLDURA E FAIXA DE SOMA")
-        c_p1, c_p2, c_p3, c_p4 = st.columns(4)
-        with c_p1:
-            primos_sel = st.multiselect("Quantidade de Primos:", list(range(7)), default=st.session_state.get("sel_primos", [3]), key="sel_primos")
-        with c_p2:
-            opcoes_par = {"3P / 3I": 3, "2P / 4I": 2, "4P / 2I": 4, "1P / 5I": 1, "5P / 1I": 5, "0P / 6I": 0, "6P / 0I": 6}
-            par_sel = st.multiselect("Pares / Ímpares:", list(opcoes_par.keys()), default=st.session_state.get("sel_pares", ["2P / 4I"]), key="sel_pares")
-            pares_valores = {opcoes_par[k] for k in par_sel}
-        with c_p3:
-            moldura_sel = st.multiselect("Dezenas na Moldura:", list(range(7)), default=st.session_state.get("sel_moldura", [5]), key="sel_moldura")
-        with c_p4:
-            val_soma_estado = st.session_state.get("sel_soma", (150, 190))
-            soma_min_val, soma_max_val = int(val_soma_estado[0]), int(val_soma_estado[1]) if isinstance(val_soma_estado, (list, tuple)) else (150, 190)
-            faixa_soma = st.slider("Faixa de Soma:", 50, 320, (soma_min_val, soma_max_val), key="sel_soma")
-
-    config_total = {
-        "linhas": limites_linhas, "colunas": limites_colunas, "diag_cresc": limites_dc,
-        "diag_decresc": limites_dd, "primos_aceitos": set(primos_sel), "pares_aceitos": pares_valores,
-        "moldura_aceita": set(moldura_sel), "faixa_soma": faixa_soma
-    }
-
-    st.divider()
-    if st.button("🚀 GERAR E FILTRAR APOSTAS", use_container_width=True, type="primary"):
-        with st.spinner("🛠️ Processando Motor Combinatório..."):
-            resultados = executar_varredura_pool(st.session_state.pool_trabalho, config_total, st.empty(), st.empty(), teto_max=None)
-            st.session_state.jogos_aprovados = resultados
-            st.success(f"✅ Sucesso: {len(resultados):,} apostas geradas.")
-
-# Aba 3
-with tab_volante:
-    st.subheader("DISSECAÇÃO DA CARTELA")
-    jogos_exibir = st.session_state.jogos_aprovados or st.session_state.jogos_upload
-    if jogos_exibir:
-        sel_idx = st.slider("Aposta para inspecionar:", 1, len(jogos_exibir), 1)
-        jogo_ativo = sorted(jogos_exibir[sel_idx - 1])
-        render_volante_conferencia(jogo_ativo, [], f"JOGO #{sel_idx:04d}: {' - '.join([f'{n:02d}' for n in jogo_ativo])}")
-    else:
-        st.info("Gere apostas para inspecionar no volante.")
-
-# Aba 4
-with tab_upload:
-    st.subheader("📥 UPLOAD, FILTRAGEM & CONFERÊNCIA")
-    arquivo_enviado = st.file_uploader("Carregue seu arquivo de apostas (.txt ou .csv):", type=["txt", "csv"])
-    if arquivo_enviado is not None:
-        jogos_carregados, _ = processar_arquivo_upload(arquivo_enviado.read())
-        st.session_state.jogos_upload = jogos_carregados
-        st.success(f"Arquivo Carregado: {len(jogos_carregados):,} apostas.")
-
-# Aba 5
-with tab_historico:
-    st.subheader("BASE DE CONCURSOS OFICIAIS")
-    if st.button("🌐 SINCRONIZAR COM A CAIXA AGORA", type="primary"):
-        r = requests.get("https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena", timeout=10, verify=False)
-        if r.status_code == 200:
-            ult = r.json()
-            dezenas_sorteadas = sorted([int(x) for x in ult.get("listaDezenas", [])])
-            if len(dezenas_sorteadas) == 6 and dezenas_sorteadas not in st.session_state.historico:
-                st.session_state.historico.append(dezenas_sorteadas)
-                st.success(f"Concurso #{ult.get('numero')} sincronizado!")
+            c_grv1, c_grv2 = st.columns(2)
+            with c_grv1:
+                if st.button("💾 GRAVAR MANUAL", use_container_width=True, type="primary"):
+                    if not nome_novo_filtro.strip():
+                        st.error("Informe um nome para a predefinição.")
+                    else:
+                        novo_preset = {
+                            "linhas": [st.session_state.get(f"sel_l_{r}", "0 a 2") for r in range(6)],
+                            "colunas": [st.session_state.get(f"sel_c_{c}", "0 a 2") for c in range(10)],
+                            "diag_cresc": [st.session_state.get(f"sel_dc_{d}", "0 a 2") for d in range(10)],
+                            "diag_decresc": [st.session_state.get(f"sel_dd_{d}", "0 a 2") for d in range(10)],
+                            "primos": st.session_state.get("sel_primos", [3]),
+                            "pares": st.session_state.get("sel_pares", ["2P / 4I"]),
+                            "moldura": st.session_state.get("sel_moldura", [5]),
+                            "soma": (int(st.session_state.get("sel_soma", (150, 190))[0]), int(st.session_state.get("sel_soma", (150, 190))[1]))
+                        }
+                        st.session_state.presets_filtros[nome_novo_filtro.strip()] = novo_preset
+                        st.success(f"Predefinição '{nome_novo_filtro.strip()}' gravada com sucesso!")
+                        st.rerun()
+            with c_grv2:
+                arq_json_upload = st.file_uploader("Importar (.JSON):", type=["json"], label_visibility="collapsed")
+                if arq_json_upload is not None:
+                    try:
+                        st.session_state.presets_filtros.update(json.load(arq_json_upload))
+                        st.success("Importado com sucesso!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao ler JSON: {e}")
