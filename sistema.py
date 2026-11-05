@@ -286,7 +286,7 @@ try:
         }
 
     # ==============================================================================
-    # ENGENHARIA REVERSA & FILTROS
+    # ENGENHARIA REVERSA & FILTROS (CORRIGIDA E BLINDADA)
     # ==============================================================================
     def mapear_quantidade_para_rotulo(qtd, modo="exato"):
         if modo == "exato":
@@ -343,18 +343,19 @@ try:
                     "soma": (max(50, soma_total - margem_soma), min(320, soma_total + margem_soma))
                 }
             else:
+                # Perfil Flexível Dinâmico (Sem forçar linhas vazias a terem números)
                 primos_range = sorted(list({max(0, primos_total - 1), primos_total, min(6, primos_total + 1)}))
                 moldura_range = sorted(list({max(0, moldura_total - 1), moldura_total, min(6, moldura_total + 1)}))
                 pares_opcoes = list({f"{pares_total}P / {6 - pares_total}I", "3P / 3I", "4P / 2I", "2P / 4I"})
                 return {
-                    "linhas": ["1 ou 2" if l_cnt[0] in (1, 2) else "0 a 2"] + ["0 a 2"] * 5,
-                    "colunas": ["0 a 2"] * 10,
-                    "diag_cresc": ["0 a 2"] * 10,
-                    "diag_decresc": ["0 a 2"] * 10,
+                    "linhas": ["0 a 2" if q <= 2 else "Livre (0 a 6)" for q in l_cnt],
+                    "colunas": ["0 a 2" if q <= 2 else "Livre (0 a 6)" for q in c_cnt],
+                    "diag_cresc": ["0 a 2" if q <= 2 else "Livre (0 a 6)" for q in dc_cnt],
+                    "diag_decresc": ["0 a 2" if q <= 2 else "Livre (0 a 6)" for q in dd_cnt],
                     "primos": primos_range,
                     "pares": pares_opcoes,
                     "moldura": moldura_range,
-                    "soma": (max(50, soma_total - 30), min(320, soma_total + 30))
+                    "soma": (max(50, soma_total - 35), min(320, soma_total + 35))
                 }
 
         def converter_contagem_grupo(qtd):
@@ -709,9 +710,8 @@ try:
     if "presets_filtros" not in st.session_state:
         st.session_state.presets_filtros = PRESETS_PADRAO.copy()
 
-    if "input_resultado_reverso_val" not in st.session_state:
-        ult_res = st.session_state.historico[-1] if st.session_state.historico else [5, 9, 16, 40, 41, 59]
-        st.session_state.input_resultado_reverso_val = " ".join([f"{n:02d}" for n in sorted(ult_res)])
+    if "input_dezenas_digitadas_texto" not in st.session_state:
+        st.session_state.input_dezenas_digitadas_texto = "10 17 42 43 57 59"
 
     if "linha_trabalho_reverso" not in st.session_state:
         st.session_state.linha_trabalho_reverso = None
@@ -753,12 +753,6 @@ try:
             st.session_state.pool_trabalho.remove(n)
         else:
             st.session_state.pool_trabalho.add(n)
-
-    def cb_puxar_ultimo():
-        if st.session_state.historico:
-            st.session_state.input_resultado_reverso_val = " ".join(
-                [f"{n:02d}" for n in sorted(st.session_state.historico[-1])]
-            )
 
     # ==============================================================================
     # INTERFACE PRINCIPAL
@@ -979,12 +973,15 @@ try:
             with st.container(border=True):
                 st.markdown("#### ⚡ ENGENHARIA REVERSA POR DEZENAS DIGITADAS")
                 col_input_res, col_input_nome, col_input_tipo = st.columns([2.5, 1.8, 1.7])
+                
+                if "input_dezenas_digitadas_texto" not in st.session_state:
+                    st.session_state.input_dezenas_digitadas_texto = "10 17 42 43 57 59"
+
                 with col_input_res:
                     entrada_dezenas_filtro = st.text_area(
                         "Dezenas (6 a 60 números):",
-                        value=st.session_state.input_resultado_reverso_val,
-                        height=75,
-                        key="input_resultado_reverso"
+                        value=st.session_state.input_dezenas_digitadas_texto,
+                        height=75
                     )
                 with col_input_nome:
                     nome_filtro_novo = st.text_input(
@@ -993,13 +990,13 @@ try:
                         key="input_nome_filtro_auto"
                     )
                     substituir_pool_opcao = st.checkbox(
-                        "Definir como Pool Ativo",
+                        "Limpar Pool Anterior e Deixar Somente Estas Dezenas",
                         value=True
                     )
                 with col_input_tipo:
                     tipo_tolerancia = st.selectbox(
                         "Nível de Tolerância:",
-                        ["Perfil Exato (Fiel à Amostra)", "Perfil Flexível (Margem Aberta)"],
+                        ["Perfil Flexível (Margem Aberta)", "Perfil Exato (Fiel à Amostra)"],
                         index=0,
                         key="select_modo_reverso"
                     )
@@ -1007,6 +1004,7 @@ try:
                 c_btn_rev1, c_btn_rev2 = st.columns([2, 1])
                 with c_btn_rev1:
                     if st.button("⚡ GERAR, GRAVAR E ATIVAR FILTRO", type="primary", use_container_width=True):
+                        # Captura as dezenas inteiras sem desmembrar dois dígitos
                         nums_parse = [int(x) for x in re.findall(r"\b\d+\b", entrada_dezenas_filtro)]
                         dezenas_limpas = sorted(list(set([n for n in nums_parse if 1 <= n <= 60])))
                         total_identificado = len(dezenas_limpas)
@@ -1018,6 +1016,7 @@ try:
                         elif not nome_filtro_novo.strip():
                             st.error("Informe um nome para o filtro.")
                         else:
+                            st.session_state.input_dezenas_digitadas_texto = " ".join([f"{n:02d}" for n in dezenas_limpas])
                             modo_sel = "exato" if tipo_tolerancia.startswith("Perfil Exato") else "flexivel"
                             preset_extraido = extrair_filtros_de_jogo(dezenas_limpas, modo=modo_sel)
                             nome_salvar = nome_filtro_novo.strip()
@@ -1042,11 +1041,14 @@ try:
                                 "pool_atualizado": substituir_pool_opcao
                             }
 
-                            st.success(f"Filtro '{nome_salvar}' ativado com sucesso!")
+                            st.success(f"Filtro '{nome_salvar}' ativado com sucesso para: {' - '.join([f'{n:02d}' for n in dezenas_limpas])}")
                             st.rerun()
 
                 with c_btn_rev2:
-                    st.button("🔄 Puxar Último Concurso", on_click=cb_puxar_ultimo, use_container_width=True)
+                    if st.button("🔄 Puxar Último Concurso", use_container_width=True):
+                        if st.session_state.historico:
+                            st.session_state.input_dezenas_digitadas_texto = " ".join([f"{n:02d}" for n in sorted(st.session_state.historico[-1])])
+                            st.rerun()
 
         # Linha de Trabalho
         st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
@@ -1507,7 +1509,7 @@ try:
     # ==============================================================================
     # ABA 5: HISTÓRICO & API CAIXA
     # ==============================================================================
-    with tab_historico:
+    with tab5:
         st.subheader("BASE DE CONCURSOS OFICIAIS")
         st.markdown(f"**Total em memória:** `{len(st.session_state.historico)}` ({st.session_state.origem})")
 
@@ -1533,7 +1535,7 @@ try:
                             if dezenas_sorteadas not in st.session_state.historico:
                                 st.session_state.historico.append(dezenas_sorteadas)
                             st.session_state.origem = f"API Caixa (Concurso #{ult.get('numero', '?')})"
-                            st.session_state.input_resultado_reverso_val = " ".join([f"{n:02d}" for n in dezenas_sorteadas])
+                            st.session_state.input_dezenas_digitadas_texto = " ".join([f"{n:02d}" for n in dezenas_sorteadas])
                             st.success(f"Concurso #{ult.get('numero')} sincronizado: {' - '.join([f'{n:02d}' for n in dezenas_sorteadas])}")
                             st.rerun()
                         else:
