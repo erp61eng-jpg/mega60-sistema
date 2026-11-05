@@ -1507,7 +1507,7 @@ try:
     # ==============================================================================
     # ABA 5: HISTÓRICO & API CAIXA
     # ==============================================================================
-    with tab5:
+    with tab_historico:
         st.subheader("BASE DE CONCURSOS OFICIAIS")
         st.markdown(f"**Total em memória:** `{len(st.session_state.historico)}` ({st.session_state.origem})")
 
@@ -1548,6 +1548,5 @@ try:
                 st.markdown(f"**Concurso #{i:02d}:** `{' - '.join([f'{n:02d}' for n in sorted(sorteio)])}`")
 
 except Exception as erro_global:
-    # CAPTURA QUALQUER ERRO E EXIBE NA TELA EM PRETO E AMARELO
     st.error("🚨 Ocorreu um erro na execução do aplicativo:")
     st.code(traceback.format_exc())
