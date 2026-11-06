@@ -1158,21 +1158,39 @@ with tab_config:
         st.success(f"Total Aprovado: {qtd_aprov:,} apostas geradas.")
         txt_saida = "\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_aprovados])
         st.download_button("📥 BAIXAR JOGOS APROVADOS (.TXT)", data=txt_saida, file_name=f"mega60_apostas_filtradas_{qtd_aprov}.txt", mime="text/plain", use_container_width=True)
-
-   # Gerenciador de Predefinições e Gravação Manual
+# GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO MANUAL
     with st.container(border=True):
-        st.markdown("#### 💾 GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO")
+        st.markdown("#### 💾 GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO MANUAL")
         col_puxar, col_gravar = st.columns(2)
-
         with col_puxar:
             lista_nomes = list(st.session_state.presets_filtros.keys())
-            filtro_escolhido = st.selectbox("Carregar Filtro Salvo:", lista_nomes, index=0, key="select_preset_load")
-
+            filtro_escolhido = st.selectbox("Carregar Filtro Salvo:", lista_nomes, key="select_preset_load")
             c_pux1, c_pux2 = st.columns(2)
             with c_pux1:
                 if st.button("🚀 APLICAR PREDEFINIÇÃO", use_container_width=True):
                     aplicar_preset(filtro_escolhido)
-                    st.success(f"Filtro '{filtro_escolhido}' carregado!")
+                    st.success(f"Filtro '{filtro_escolhido}' carregado com sucesso!")
+                    st.rerun()  # Força a atualização imediata da interface visual
+            with c_pux2:
+                st.download_button("💾 BAIXAR (.JSON)", data=json.dumps(st.session_state.presets_filtros, indent=2, ensure_ascii=False), file_name="meus_filtros_mega60.json", mime="application/json", use_container_width=True)
+
+        with col_gravar:
+            nome_novo_filtro = st.text_input("Nome da Nova Configuração:", placeholder="Ex: Meu Filtro Top", key="input_nome_filtro_manual")
+            if st.button("💾 GRAVAR CONFIGURAÇÃO MANUAL", use_container_width=True, type="primary"):
+                if not nome_novo_filtro.strip(): st.error("Informe um nome para a predefinição.")
+                else:
+                    novo_preset = {
+                        "linhas": [st.session_state.get(f"sel_l_{r}", "0 a 2") for r in range(6)],
+                        "colunas": [st.session_state.get(f"sel_c_{c}", "0 a 2") for c in range(10)],
+                        "diag_cresc": [st.session_state.get(f"sel_dc_{d}", "0 a 2") for d in range(10)],
+                        "diag_decresc": [st.session_state.get(f"sel_dd_{d}", "0 a 2") for d in range(10)],
+                        "primos": st.session_state.get("sel_primos", [3]),
+                        "pares": st.session_state.get("sel_pares", ["2P / 4I"]),
+                        "moldura": st.session_state.get("sel_moldura", [5]),
+                        "soma": (int(st.session_state.get("sel_soma", (150, 190))[0]), int(st.session_state.get("sel_soma", (150, 190))[1]))
+                    }
+                    st.session_state.presets_filtros[nome_novo_filtro.strip()] = novo_preset
+                    st.success(f"Predefinição '{nome_novo_filtro.strip()}' gravada com sucesso!")
                     st.rerun()
             with c_pux2:
                 json_presets = json.dumps(st.session_state.presets_filtros, indent=2, ensure_ascii=False)
@@ -1180,7 +1198,7 @@ with tab_config:
                     "💾 BAIXAR (.JSON)",
                     data=json_presets,
                     file_name="meus_filtros_mega60.json",
-                    mime="application/json",
+                    mi                                                                                                                                'me="application/json",
                     use_container_width=True
                 )
 
