@@ -736,10 +736,136 @@ with tab_volante:
 with tab_upload:
     st.subheader("📥 UPLOAD, FILTRAGEM & CONFERÊNCIA")
     arquivo_enviado = st.file_uploader("Carregue seu arquivo de apostas (.txt ou .csv):", type=["txt", "csv"])
+
     if arquivo_enviado is not None:
-        jogos_carregados, _ = processar_arquivo_upload(arquivo_enviado.read())
+        conteudo = arquivo_enviado.read()
+        jogos_carregados, invalidos = processar_arquivo_upload(conteudo)
         st.session_state.jogos_upload = jogos_carregados
-        st.success(f"Arquivo Carregado: {len(jogos_carregados):,} apostas.")
+        if invalidos > 0:
+            st.warning(f"⚠️ {invalidos} linha(s) ignoradas por formato inválido.")
+
+    if st.session_state.jogos_upload:
+        jogos_up = st.session_state.jogos_upload
+        total_up = len(jogos_up)
+        st.success(f"Arquivo Carregado: {total_up:,} apostas em memória.")
+
+        with st.container(border=True):
+            st.markdown("#### ⚡ FILTRAR ARQUIVO CARREGADO COM OS FILTROS ATIVOS")
+            c_flt1, c_flt2 = st.columns([2, 1])
+            with c_flt1:
+                if st.button("🔍 APLICAR FILTROS ATIVOS NO ARQUIVO", type="primary", use_container_width=True):
+                    with st.spinner("Filtrando apostas do arquivo..."):
+                        t_ini_flt = time.time()
+                        aprovados_do_arquivo = [
+                            j for j in jogos_up if validar_aposta_final_6(tuple(j), config_total)
+                        ]
+                        t_fim_flt = time.time() - t_ini_flt
+                        st.session_state.jogos_filtrados_upload = aprovados_do_arquivo
+                        st.success(f"Concluído em {t_fim_flt:.2f}s! {len(aprovados_do_arquivo):,} de {total_up:,} apostas aprovadas.")
+
+            if st.session_state.jogos_filtrados_upload:
+                qtd_flt = len(st.session_state.jogos_filtrados_upload)
+                txt_flt = "\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_filtrados_upload])
+                with c_flt2:
+                    st.download_button(
+                        f"💾 BAIXAR LOTE FILTRADO ({qtd_flt:,} JOGOS)",
+                        data=txt_flt,
+                        file_name=f"mega60_lote_filtrado_{qtd_flt}.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    )
+
+        st.divider()
+        col_diag_left, col_conf_right = st.columns([1, 1], gap="large")
+
+        with col_diag_left:
+            st.markdown("### 📊 DIAGNÓSTICO DO ARQUIVO")
+            cnt_nums = Counter()
+            somas = []
+            for j in jogos_up:
+                cnt_nums.update(j)
+                somas.append(sum(j))
+
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Total de Jogos", f"{total_up:,}")
+            m2.metric("Soma Média", f"{sum(somas)/len(somas):.1f}")
+            m3.metric("Mais Frequente", f"{cnt_nums.most_common(1)[0][0]:02d}")
+
+            st.markdown("#### 🔥 FREQUÊNCIA DE DEZENAS NO ARQUIVO")
+            celulas_up_heat = ""
+            for r in range(6):
+                for c in range(10):
+                    n = r * 10 + c + 1
+                    freq = cnt_nums[n]
+                    bg = "#ffffff" if freq == 0 else "#fef08a"
+                    celulas_up_heat += f'<div style="width:40px;height:40px;background:{bg};color:#000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;border:2px solid #000000;box-sizing:border-box;"><span style="font-size:13px;font-weight:900;">{n:02d}</span><span style="font-size:10px;font-weight:900;">{freq}x</span></div>'
+
+            html_up = f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,40px);gap:4px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>'
+            render_html_seguro(html_up, 310)
+
+        with col_conf_right:
+            st.markdown("### 🎯 CONFERÊNCIA DE RESULTADOS")
+            ult_sorteio = st.session_state.historico[-1] if st.session_state.historico else [4, 12, 18, 30, 35, 54]
+            txt_padrao = " ".join([f"{n:02d}" for n in sorted(ult_sorteio)])
+
+            modo_origem = st.radio("Origem do Sorteio:", ["Último Sorteio Oficial", "Digitar Manualmente"], horizontal=True)
+            if modo_origem == "Último Sorteio Oficial":
+                dezenas_conf = sorted(ult_sorteio)
+            else:
+                entrada_manual = st.text_input("6 Dezenas Sorteadas:", value=txt_padrao)
+                nums_man = [int(x) for x in re.findall(r"\b\d+\b", entrada_manual)]
+                dezenas_conf = sorted(list(set([n for n in nums_man if 1 <= n <= 60])))
+
+            if len(dezenas_conf) != 6:
+                st.error("Informe exatamente 6 dezenas distintas entre 01 e 60.")
+            else:
+                render_cartao_sorteio_html(dezenas_conf, titulo="SORTEIO CONFERIDO")
+                base_conferir = st.session_state.jogos_filtrados_upload or jogos_up
+                relatorio_conf, placar_conf = conferir_apostas_contra_sorteio(base_conferir, dezenas_conf)
+
+                c_s, c_q, c_qd, c_t = st.columns(4)
+                c_s.metric("Sena (6)", f"{len(placar_conf[6])}")
+                c_q.metric("Quina (5)", f"{len(placar_conf[5])}")
+                c_qd.metric("Quadra (4)", f"{len(placar_conf[4])}")
+                c_t.metric("Terno (3)", f"{len(placar_conf[3])}")
+
+                tot_prem = len(placar_conf[6]) + len(placar_conf[5]) + len(placar_conf[4])
+                if tot_prem > 0:
+                    st.success(f"🎉 {tot_prem} aposta(s) premiada(s) encontradas (4, 5 ou 6 acertos)!")
+                    jogos_premiados_txt = "\n".join([
+                        f"{' '.join([f'{n:02d}' for n in it['jogo']])} | {it['qtd_acertos']} ACERTOS"
+                        for it in relatorio_conf if it["qtd_acertos"] >= 4
+                    ])
+                    st.download_button(
+                        "📥 BAIXAR APOSTAS PREMIADAS (.TXT)",
+                        data=jogos_premiados_txt,
+                        file_name=f"mega60_apostas_premiadas_{tot_prem}.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    )
+                else:
+                    st.warning("Nenhuma aposta alcançou 4, 5 ou 6 acertos neste lote.")
+
+                jogos_com_acerto = [it for it in relatorio_conf if it["qtd_acertos"] >= 4] or relatorio_conf
+                opcoes_map = {
+                    it["num_aposta"]: f"Aposta #{it['num_aposta']:04d} — {it['qtd_acertos']} acertos"
+                    for it in jogos_com_acerto[:50]
+                }
+                if opcoes_map:
+                    idx_escolhido = st.selectbox(
+                        "Inspecionar no Volante:",
+                        list(opcoes_map.keys()),
+                        format_func=lambda x: opcoes_map[x]
+                    )
+                    if idx_escolhido is not None:
+                        item_ativo = next(it for it in relatorio_conf if it["num_aposta"] == idx_escolhido)
+                        render_volante_conferencia(
+                            item_ativo["jogo"],
+                            dezenas_conf,
+                            titulo=f"Aposta #{item_ativo['num_aposta']:04d} ({item_ativo['qtd_acertos']} Acertos)"
+                        )
+    else:
+        st.info("Carregue um arquivo .txt ou .csv na parte superior para ativar o painel de conferência e diagnóstico.")
 
 # ------------------------------------------------------------------------------
 # ABA 5: HISTÓRICO & API CAIXA
