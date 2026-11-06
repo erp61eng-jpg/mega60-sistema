@@ -714,17 +714,14 @@ with tab_upload:
 
             render_html_seguro(f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,40px);gap:4px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>', 310)
 
-        with col_conf_right:
+       with col_conf_right:
             st.markdown("### 🎯 CONFERÊNCIA DE RESULTADOS")
             ult_sorteio = st.session_state.historico[-1] if st.session_state.historico else [4, 12, 18, 30, 35, 54]
-            
-            # AQUI ESTÁ O SELECTOR DE MODO (Oficial vs Manual)
             modo_origem = st.radio("Origem:", ["Último Sorteio Oficial", "Digitar Manualmente"], horizontal=True)
             
             if modo_origem == "Último Sorteio Oficial":
                 dezenas_conf = sorted(ult_sorteio)
             else:
-                # 👉 É NESTA LINHA QUE APARECE A CAIXA PARA DIGITAR AS 6 DEZENAS MANUAIS:
                 entrada_manual = st.text_input("6 Dezenas Sorteadas:", value=" ".join([f"{n:02d}" for n in sorted(ult_sorteio)]))
                 nums_man = [int(x) for x in re.findall(r"\b\d+\b", entrada_manual)]
                 dezenas_conf = sorted(list(set([n for n in nums_man if 1 <= n <= 60])))
@@ -749,7 +746,8 @@ with tab_upload:
                     st.download_button("📥 BAIXAR APOSTAS PREMIADAS (.TXT)", data=jogos_premiados_txt, file_name="mega60_premiadas.txt", mime="text/plain", use_container_width=True)
                 else:
                     st.warning("Nenhuma aposta alcançou 4, 5 ou 6 acertos.")
-                 jogos_com_acerto = [it for it in relatorio_conf if it["qtd_acertos"] >= 4] or relatorio_conf
+
+                jogos_com_acerto = [it for it in relatorio_conf if it["qtd_acertos"] >= 4] or relatorio_conf
                 opcoes_map = {it["num_aposta"]: f"Aposta #{it['num_aposta']:04d} — {it['qtd_acertos']} acertos" for it in jogos_com_acerto[:50]}
                 if opcoes_map:
                     idx_escolhido = st.selectbox("Inspecionar no Volante:", list(opcoes_map.keys()), format_func=lambda x: opcoes_map[x])
@@ -758,7 +756,6 @@ with tab_upload:
                         render_volante_conferencia(item_ativo["jogo"], dezenas_conf, titulo=f"Aposta #{item_ativo['num_aposta']:04d} ({item_ativo['qtd_acertos']} Acertos)")
     else:
         st.info("Carregue um arquivo .txt ou .csv na parte superior para ativar o painel de conferência.")
-
 # ------------------------------------------------------------------------------
 # ABA 5: HISTÓRICO & API CAIXA
 # ------------------------------------------------------------------------------
