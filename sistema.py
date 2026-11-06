@@ -22,7 +22,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ESTILIZAÇÃO CSS GLOBAL
+# ESTILIZAÇÃO CSS GLOBAL (ALTO CONTRASTE PRETO E AMARELO)
 st.markdown('''
 <style>
     html, body, [class*="css"], .stMarkdown, p, span, label, div, input, textarea, select {
@@ -50,9 +50,12 @@ st.markdown('''
 
 
 # ==============================================================================
-# ==============================================================================
-# 🛠️ ETAPA 1: CONSTANTES, LOOKUPS, FUNÇÕES AUXILIARES E MOTORES DE CÁLCULO
-# ==============================================================================
+# ##############################################################################
+# ##############################################################################
+# ##############################################################################
+# 🛠️ ETAPA 1: CONSTANTES, LOOKUPS E MOTORES DE CÁLCULO / ELLIOTT / VALIDAÇÃO
+# ##############################################################################
+# ##############################################################################
 # ==============================================================================
 
 TOTAL_NUMS = 60
@@ -317,7 +320,7 @@ def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
 
 
 # ==============================================================================
-# ==============================================================================
+# ##############################################################################
 # ##############################################################################
 # ##############################################################################
 # 🛠️ ETAPA 2: INICIALIZAÇÃO DE ESTADO, GERENCIAMENTO E APLICAÇÃO DE PRESETS
@@ -370,7 +373,7 @@ def toggle_dezena(n):
 
 
 # ==============================================================================
-# ==============================================================================
+# ##############################################################################
 # ##############################################################################
 # ##############################################################################
 # 🛠️ ETAPA 3: INTERFACE DO APLICATIVO (ABAS 1 A 5)
@@ -638,20 +641,17 @@ with tab_config:
 with tab_volante:
     st.subheader("DISSECAÇÃO DA CARTELA")
     jogos_exibir = st.session_state.jogos_aprovados or st.session_state.jogos_upload
-
     if jogos_exibir:
         total_jogos = len(jogos_exibir)
-        st.markdown(f"**Total de jogos disponíveis para inspeção:** `{total_jogos:,}`")
-        
         if total_jogos > 1:
-            sel_idx = st.slider("Escolha o número da aposta para inspecionar:", 1, total_jogos, 1)
+            sel_idx = st.slider("Aposta para inspecionar:", 1, total_jogos, 1)
         else:
             sel_idx = 1
-
         jogo_ativo = sorted(jogos_exibir[sel_idx - 1])
         render_volante_conferencia(jogo_ativo, [], f"JOGO #{sel_idx:04d}: {' - '.join([f'{n:02d}' for n in jogo_ativo])}")
     else:
-        st.info("Gere apostas na Aba 2 ou carregue um arquivo na Aba 4 para inspecionar no volante.")
+        st.info("Gere apostas para inspecionar no volante.")
+
 # ------------------------------------------------------------------------------
 # ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA
 # ------------------------------------------------------------------------------
@@ -714,11 +714,10 @@ with tab_upload:
 
             render_html_seguro(f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,40px);gap:4px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>', 310)
 
-       with col_conf_right:
+        with col_conf_right:
             st.markdown("### 🎯 CONFERÊNCIA DE RESULTADOS")
             ult_sorteio = st.session_state.historico[-1] if st.session_state.historico else [4, 12, 18, 30, 35, 54]
             modo_origem = st.radio("Origem:", ["Último Sorteio Oficial", "Digitar Manualmente"], horizontal=True)
-            
             if modo_origem == "Último Sorteio Oficial":
                 dezenas_conf = sorted(ult_sorteio)
             else:
@@ -756,6 +755,7 @@ with tab_upload:
                         render_volante_conferencia(item_ativo["jogo"], dezenas_conf, titulo=f"Aposta #{item_ativo['num_aposta']:04d} ({item_ativo['qtd_acertos']} Acertos)")
     else:
         st.info("Carregue um arquivo .txt ou .csv na parte superior para ativar o painel de conferência.")
+
 # ------------------------------------------------------------------------------
 # ABA 5: HISTÓRICO & API CAIXA
 # ------------------------------------------------------------------------------
