@@ -714,10 +714,14 @@ with tab_upload:
         with col_conf_right:
             st.markdown("### 🎯 CONFERÊNCIA DE RESULTADOS")
             ult_sorteio = st.session_state.historico[-1] if st.session_state.historico else [4, 12, 18, 30, 35, 54]
+            
+            # AQUI ESTÁ O SELECTOR DE MODO (Oficial vs Manual)
             modo_origem = st.radio("Origem:", ["Último Sorteio Oficial", "Digitar Manualmente"], horizontal=True)
+            
             if modo_origem == "Último Sorteio Oficial":
                 dezenas_conf = sorted(ult_sorteio)
             else:
+                # 👉 É NESTA LINHA QUE APARECE A CAIXA PARA DIGITAR AS 6 DEZENAS MANUAIS:
                 entrada_manual = st.text_input("6 Dezenas Sorteadas:", value=" ".join([f"{n:02d}" for n in sorted(ult_sorteio)]))
                 nums_man = [int(x) for x in re.findall(r"\b\d+\b", entrada_manual)]
                 dezenas_conf = sorted(list(set([n for n in nums_man if 1 <= n <= 60])))
