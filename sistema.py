@@ -638,17 +638,20 @@ with tab_config:
 with tab_volante:
     st.subheader("DISSECAÇÃO DA CARTELA")
     jogos_exibir = st.session_state.jogos_aprovados or st.session_state.jogos_upload
+
     if jogos_exibir:
         total_jogos = len(jogos_exibir)
+        st.markdown(f"**Total de jogos disponíveis para inspeção:** `{total_jogos:,}`")
+        
         if total_jogos > 1:
-            sel_idx = st.slider("Aposta para inspecionar:", 1, total_jogos, 1)
+            sel_idx = st.slider("Escolha o número da aposta para inspecionar:", 1, total_jogos, 1)
         else:
             sel_idx = 1
+
         jogo_ativo = sorted(jogos_exibir[sel_idx - 1])
         render_volante_conferencia(jogo_ativo, [], f"JOGO #{sel_idx:04d}: {' - '.join([f'{n:02d}' for n in jogo_ativo])}")
     else:
-        st.info("Gere apostas para inspecionar no volante.")
-
+        st.info("Gere apostas na Aba 2 ou carregue um arquivo na Aba 4 para inspecionar no volante.")
 # ------------------------------------------------------------------------------
 # ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA
 # ------------------------------------------------------------------------------
