@@ -22,7 +22,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ESTILIZAÇÃO CSS: FONTE MAIOR, TUDO PRETO E ALTO CONTRASTE (ZERO VERDE)
+# ESTILIZAÇÃO CSS GLOBAL
 st.markdown('''
 <style>
     html, body, [class*="css"], .stMarkdown, p, span, label, div, input, textarea, select {
@@ -31,39 +31,7 @@ st.markdown('''
         font-family: Arial, Helvetica, sans-serif !important;
         line-height: 1.5 !important;
     }
-    
-    h1 {
-        font-size: 2.3rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-        line-height: 1.3 !important;
-    }
-    h2 {
-        font-size: 1.9rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-        line-height: 1.3 !important;
-    }
-    h3 {
-        font-size: 1.5rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-        line-height: 1.4 !important;
-    }
-    h4 {
-        font-size: 1.25rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-        line-height: 1.4 !important;
-        margin-bottom: 6px !important;
-    }
-
-    .stCaption, [data-testid="stCaptionContainer"] {
-        color: #000000 !important;
-        font-size: 1.1rem !important;
-        font-weight: 900 !important;
-    }
-
+    h1, h2, h3, h4 { color: #000000 !important; font-weight: 900 !important; }
     .stButton > button {
         color: #000000 !important;
         font-size: 1.2rem !important;
@@ -71,68 +39,20 @@ st.markdown('''
         border: 3px solid #000000 !important;
         background-color: #ffffff !important;
         border-radius: 8px !important;
-        padding: 6px 4px !important;
     }
-    
     .stButton > button[kind="primary"] {
         background-color: #facc15 !important;
         color: #000000 !important;
         border: 3px solid #000000 !important;
-    }
-
-    button[data-baseweb="tab"] {
-        font-size: 1.2rem !important;
-        font-weight: 900 !important;
-        color: #000000 !important;
-    }
-
-    .stSelectbox label, .stMultiSelect label, .stSlider label, .stTextInput label, .stTextArea label, .stNumberInput label {
-        font-size: 1.15rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-    }
-
-    [data-testid="stMetricValue"] {
-        font-size: 2.0rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-    }
-    [data-testid="stMetricLabel"] {
-        font-size: 1.15rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-    }
-
-    .stAlert {
-        background-color: #fef08a !important;
-        border: 3px solid #000000 !important;
-    }
-    .stAlert p {
-        font-size: 1.15rem !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-    }
-    
-    code {
-        color: #000000 !important;
-        background-color: #fef08a !important;
-        font-weight: 900 !important;
-        font-size: 1.15rem !important;
-        border: 2px solid #000000 !important;
-        padding: 2px 6px !important;
-        border-radius: 4px !important;
     }
 </style>
 ''', unsafe_allow_html=True)
 
 
 # ==============================================================================
-# ##############################################################################
-# ##############################################################################
-# ##############################################################################
-# 🛠️ ETAPA 1: CONSTANTES, LOOKUPS E MOTORES DE CÁLCULO / ELLIOTT / VALIDAÇÃO
-# ##############################################################################
-# ##############################################################################
+# ==============================================================================
+# 🛠️ ETAPA 1: CONSTANTES, LOOKUPS, FUNÇÕES AUXILIARES E MOTORES DE CÁLCULO
+# ==============================================================================
 # ==============================================================================
 
 TOTAL_NUMS = 60
@@ -194,8 +114,7 @@ PRESETS_PADRAO = {
 def calcular_metricas_elliott(historico):
     total = len(historico)
     atrasos = {n: total for n in range(1, 61)}
-    freq_5 = {n: 0 for n in range(1, 61)}
-    freq_15 = {n: 0 for n in range(1, 61)}
+    freq_5, freq_15 = {n: 0 for n in range(1, 61)}, {n: 0 for n in range(1, 61)}
     for idx_rev, sorteio in enumerate(reversed(historico)):
         for n in sorteio:
             if atrasos[n] == total: atrasos[n] = idx_rev
@@ -210,11 +129,7 @@ def calcular_metricas_elliott(historico):
         score_fib = 3.5 if PROPS[n]["is_fib"] else 0.0
         penalidade = -4.0 if atr > 21 else 0.0
         score_total = max(0.0, score_retracao + score_impulso + score_fib + penalidade)
-        dados[n] = {
-            "numero": n, "score": round(score_total, 1), "atraso": atr,
-            "is_fib": PROPS[n]["is_fib"], "is_primo": PROPS[n]["is_primo"],
-            "is_par": PROPS[n]["is_par"], "dc": PROPS[n]["dc"], "dd": PROPS[n]["dd"]
-        }
+        dados[n] = {"numero": n, "score": round(score_total, 1), "atraso": atr, "is_fib": PROPS[n]["is_fib"], "is_primo": PROPS[n]["is_primo"], "is_par": PROPS[n]["is_par"], "dc": PROPS[n]["dc"], "dd": PROPS[n]["dd"]}
     return dados
 
 def extrair_analise_elite(dados_calor):
@@ -249,8 +164,7 @@ def extrair_filtros_de_jogo(dezenas, modo="exato", margem_soma=25):
     dezenas = sorted(list(set(dezenas)))
     total_dezenas = len(dezenas)
     if not (6 <= total_dezenas <= 60): return None
-    l_cnt, c_cnt = [0] * 6, [0] * 10
-    dc_cnt, dd_cnt = [0] * 10, [0] * 10
+    l_cnt, c_cnt, dc_cnt, dd_cnt = [0]*6, [0]*10, [0]*10, [0]*10
     for n in dezenas:
         l_cnt[ROW_LOOKUP[n]] += 1
         c_cnt[COL_LOOKUP[n]] += 1
@@ -286,22 +200,16 @@ def extrair_filtros_multiconcursos(lista_sorteios, modo="preciso"):
             dc_cnt[DC_LOOKUP[n]] += 1
             dd_cnt[DD_LOOKUP[n]] += 1
         for r in range(6):
-            min_l[r] = min(min_l[r], l_cnt[r])
-            max_l[r] = max(max_l[r], l_cnt[r])
+            min_l[r], max_l[r] = min(min_l[r], l_cnt[r]), max(max_l[r], l_cnt[r])
         for c in range(10):
-            min_c[c] = min(min_c[c], c_cnt[c])
-            max_c[c] = max(max_c[c], c_cnt[c])
+            min_c[c], max_c[c] = min(min_c[c], c_cnt[c]), max(max_c[c], c_cnt[c])
         for d in range(10):
-            min_dc[d] = min(min_dc[d], dc_cnt[d])
-            max_dc[d] = max(max_dc[d], dc_cnt[d])
-            min_dd[d] = min(min_dd[d], dd_cnt[d])
-            max_dd[d] = max(max_dd[d], dd_cnt[d])
-        pr = sum(1 for n in dezenas if PRIMO_LOOKUP[n])
+            min_dc[d], max_dc[d] = min(min_dc[d], dc_cnt[d]), max(max_dc[d], dc_cnt[d])
+            min_dd[d], max_dd[d] = min(min_dd[d], dd_cnt[d]), max(max_dd[d], dd_cnt[d])
+        conjunto_primos.add(sum(1 for n in dezenas if PRIMO_LOOKUP[n]))
         pa = sum(1 for n in dezenas if PAR_LOOKUP[n])
-        mo = sum(1 for n in dezenas if MOLDURA_LOOKUP[n])
-        conjunto_primos.add(pr)
         conjunto_pares.add(f"{pa}P / {6 - pa}I")
-        conjunto_moldura.add(mo)
+        conjunto_moldura.add(sum(1 for n in dezenas if MOLDURA_LOOKUP[n]))
         somas_obs.append(sum(dezenas))
     return {
         "linhas": [mapear_intervalo_para_opcao(min_l[r], max_l[r], is_flex) for r in range(6)],
@@ -315,12 +223,9 @@ def extrair_filtros_multiconcursos(lista_sorteios, modo="preciso"):
 def validar_aposta_final_6(jogo, cfg):
     soma_j = sum(jogo)
     if not (cfg["faixa_soma"][0] <= soma_j <= cfg["faixa_soma"][1]): return False
-    pares_cnt = sum(1 for n in jogo if PAR_LOOKUP[n])
-    if pares_cnt not in cfg["pares_aceitos"]: return False
-    primos_cnt = sum(1 for n in jogo if PRIMO_LOOKUP[n])
-    if primos_cnt not in cfg["primos_aceitos"]: return False
-    moldura_cnt = sum(1 for n in jogo if MOLDURA_LOOKUP[n])
-    if moldura_cnt not in cfg["moldura_aceita"]: return False
+    if sum(1 for n in jogo if PAR_LOOKUP[n]) not in cfg["pares_aceitos"]: return False
+    if sum(1 for n in jogo if PRIMO_LOOKUP[n]) not in cfg["primos_aceitos"]: return False
+    if sum(1 for n in jogo if MOLDURA_LOOKUP[n]) not in cfg["moldura_aceita"]: return False
     l_cnt, c_cnt, dc_cnt, dd_cnt = [0]*6, [0]*10, [0]*10, [0]*10
     for n in jogo:
         l_cnt[ROW_LOOKUP[n]] += 1
@@ -371,6 +276,22 @@ def processar_arquivo_upload(conteudo_bytes):
         else: invalidos += 1
     return jogos, invalidos
 
+def conferir_apostas_contra_sorteio(lista_jogos, dezenas_sorteadas):
+    sorteio_set = set(dezenas_sorteadas)
+    placar = {6: [], 5: [], 4: [], 3: [], 2: [], 1: [], 0: []}
+    relatorio = []
+    for idx, jogo in enumerate(lista_jogos):
+        acertos = sorted(list(set(jogo) & sorteio_set))
+        qtd = len(acertos)
+        placar[qtd].append(idx + 1)
+        relatorio.append({
+            "num_aposta": idx + 1,
+            "jogo": sorted(jogo),
+            "qtd_acertos": qtd,
+            "acertos": acertos
+        })
+    return relatorio, placar
+
 def render_html_seguro(conteudo_html, altura=380):
     try:
         if hasattr(st, "html"): st.html(conteudo_html)
@@ -396,7 +317,7 @@ def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
 
 
 # ==============================================================================
-# ##############################################################################
+# ==============================================================================
 # ##############################################################################
 # ##############################################################################
 # 🛠️ ETAPA 2: INICIALIZAÇÃO DE ESTADO, GERENCIAMENTO E APLICAÇÃO DE PRESETS
@@ -449,7 +370,7 @@ def toggle_dezena(n):
 
 
 # ==============================================================================
-# ##############################################################################
+# ==============================================================================
 # ##############################################################################
 # ##############################################################################
 # 🛠️ ETAPA 3: INTERFACE DO APLICATIVO (ABAS 1 A 5)
@@ -717,21 +638,19 @@ with tab_config:
 with tab_volante:
     st.subheader("DISSECAÇÃO DA CARTELA")
     jogos_exibir = st.session_state.jogos_aprovados or st.session_state.jogos_upload
-
     if jogos_exibir:
         total_jogos = len(jogos_exibir)
         if total_jogos > 1:
             sel_idx = st.slider("Aposta para inspecionar:", 1, total_jogos, 1)
         else:
             sel_idx = 1
-            st.info("Apenas 1 aposta disponível em memória.")
-
         jogo_ativo = sorted(jogos_exibir[sel_idx - 1])
         render_volante_conferencia(jogo_ativo, [], f"JOGO #{sel_idx:04d}: {' - '.join([f'{n:02d}' for n in jogo_ativo])}")
     else:
-        st.info("Gere ou carregue apostas para inspecionar no volante.")
+        st.info("Gere apostas para inspecionar no volante.")
+
 # ------------------------------------------------------------------------------
-# ABA 4: UPLOAD & FILTRAGEM SUCESSIVA
+# ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA
 # ------------------------------------------------------------------------------
 with tab_upload:
     st.subheader("📥 UPLOAD, FILTRAGEM & CONFERÊNCIA")
@@ -742,7 +661,7 @@ with tab_upload:
         jogos_carregados, invalidos = processar_arquivo_upload(conteudo)
         st.session_state.jogos_upload = jogos_carregados
         if invalidos > 0:
-            st.warning(f"⚠️ {invalidos} linha(s) ignoradas por formato inválido.")
+            st.warning(f"⚠️ {invalidos} linha(s) ignoradas.")
 
     if st.session_state.jogos_upload:
         jogos_up = st.session_state.jogos_upload
@@ -750,30 +669,20 @@ with tab_upload:
         st.success(f"Arquivo Carregado: {total_up:,} apostas em memória.")
 
         with st.container(border=True):
-            st.markdown("#### ⚡ FILTRAR ARQUIVO CARREGADO COM OS FILTROS ATIVOS")
+            st.markdown("#### ⚡ FILTRAR ARQUIVO CARREGADO")
             c_flt1, c_flt2 = st.columns([2, 1])
             with c_flt1:
                 if st.button("🔍 APLICAR FILTROS ATIVOS NO ARQUIVO", type="primary", use_container_width=True):
-                    with st.spinner("Filtrando apostas do arquivo..."):
-                        t_ini_flt = time.time()
-                        aprovados_do_arquivo = [
-                            j for j in jogos_up if validar_aposta_final_6(tuple(j), config_total)
-                        ]
-                        t_fim_flt = time.time() - t_ini_flt
+                    with st.spinner("Filtrando apostas..."):
+                        aprovados_do_arquivo = [j for j in jogos_up if validar_aposta_final_6(tuple(j), config_total)]
                         st.session_state.jogos_filtrados_upload = aprovados_do_arquivo
-                        st.success(f"Concluído em {t_fim_flt:.2f}s! {len(aprovados_do_arquivo):,} de {total_up:,} apostas aprovadas.")
+                        st.success(f"{len(aprovados_do_arquivo):,} de {total_up:,} aprovadas.")
 
             if st.session_state.jogos_filtrados_upload:
                 qtd_flt = len(st.session_state.jogos_filtrados_upload)
                 txt_flt = "\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_filtrados_upload])
                 with c_flt2:
-                    st.download_button(
-                        f"💾 BAIXAR LOTE FILTRADO ({qtd_flt:,} JOGOS)",
-                        data=txt_flt,
-                        file_name=f"mega60_lote_filtrado_{qtd_flt}.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
+                    st.download_button(f"💾 BAIXAR LOTE FILTRADO ({qtd_flt:,})", data=txt_flt, file_name=f"mega60_lote_filtrado.txt", mime="text/plain", use_container_width=True)
 
         st.divider()
         col_diag_left, col_conf_right = st.columns([1, 1], gap="large")
@@ -787,11 +696,11 @@ with tab_upload:
                 somas.append(sum(j))
 
             m1, m2, m3 = st.columns(3)
-            m1.metric("Total de Jogos", f"{total_up:,}")
+            m1.metric("Total", f"{total_up:,}")
             m2.metric("Soma Média", f"{sum(somas)/len(somas):.1f}")
             m3.metric("Mais Frequente", f"{cnt_nums.most_common(1)[0][0]:02d}")
 
-            st.markdown("#### 🔥 FREQUÊNCIA DE DEZENAS NO ARQUIVO")
+            st.markdown("#### 🔥 FREQUÊNCIA NA MATRIZ")
             celulas_up_heat = ""
             for r in range(6):
                 for c in range(10):
@@ -800,19 +709,16 @@ with tab_upload:
                     bg = "#ffffff" if freq == 0 else "#fef08a"
                     celulas_up_heat += f'<div style="width:40px;height:40px;background:{bg};color:#000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;border:2px solid #000000;box-sizing:border-box;"><span style="font-size:13px;font-weight:900;">{n:02d}</span><span style="font-size:10px;font-weight:900;">{freq}x</span></div>'
 
-            html_up = f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,40px);gap:4px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>'
-            render_html_seguro(html_up, 310)
+            render_html_seguro(f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,40px);gap:4px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>', 310)
 
         with col_conf_right:
             st.markdown("### 🎯 CONFERÊNCIA DE RESULTADOS")
             ult_sorteio = st.session_state.historico[-1] if st.session_state.historico else [4, 12, 18, 30, 35, 54]
-            txt_padrao = " ".join([f"{n:02d}" for n in sorted(ult_sorteio)])
-
-            modo_origem = st.radio("Origem do Sorteio:", ["Último Sorteio Oficial", "Digitar Manualmente"], horizontal=True)
+            modo_origem = st.radio("Origem:", ["Último Sorteio Oficial", "Digitar Manualmente"], horizontal=True)
             if modo_origem == "Último Sorteio Oficial":
                 dezenas_conf = sorted(ult_sorteio)
             else:
-                entrada_manual = st.text_input("6 Dezenas Sorteadas:", value=txt_padrao)
+                entrada_manual = st.text_input("6 Dezenas Sorteadas:", value=" ".join([f"{n:02d}" for n in sorted(ult_sorteio)]))
                 nums_man = [int(x) for x in re.findall(r"\b\d+\b", entrada_manual)]
                 dezenas_conf = sorted(list(set([n for n in nums_man if 1 <= n <= 60])))
 
@@ -831,41 +737,21 @@ with tab_upload:
 
                 tot_prem = len(placar_conf[6]) + len(placar_conf[5]) + len(placar_conf[4])
                 if tot_prem > 0:
-                    st.success(f"🎉 {tot_prem} aposta(s) premiada(s) encontradas (4, 5 ou 6 acertos)!")
-                    jogos_premiados_txt = "\n".join([
-                        f"{' '.join([f'{n:02d}' for n in it['jogo']])} | {it['qtd_acertos']} ACERTOS"
-                        for it in relatorio_conf if it["qtd_acertos"] >= 4
-                    ])
-                    st.download_button(
-                        "📥 BAIXAR APOSTAS PREMIADAS (.TXT)",
-                        data=jogos_premiados_txt,
-                        file_name=f"mega60_apostas_premiadas_{tot_prem}.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
+                    st.success(f"🎉 {tot_prem} aposta(s) premiada(s) encontradas!")
+                    jogos_premiados_txt = "\n".join([f"{' '.join([f'{n:02d}' for n in it['jogo']])} | {it['qtd_acertos']} ACERTOS" for it in relatorio_conf if it["qtd_acertos"] >= 4])
+                    st.download_button("📥 BAIXAR APOSTAS PREMIADAS (.TXT)", data=jogos_premiados_txt, file_name="mega60_premiadas.txt", mime="text/plain", use_container_width=True)
                 else:
-                    st.warning("Nenhuma aposta alcançou 4, 5 ou 6 acertos neste lote.")
+                    st.warning("Nenhuma aposta alcançou 4, 5 ou 6 acertos.")
 
                 jogos_com_acerto = [it for it in relatorio_conf if it["qtd_acertos"] >= 4] or relatorio_conf
-                opcoes_map = {
-                    it["num_aposta"]: f"Aposta #{it['num_aposta']:04d} — {it['qtd_acertos']} acertos"
-                    for it in jogos_com_acerto[:50]
-                }
+                opcoes_map = {it["num_aposta"]: f"Aposta #{it['num_aposta']:04d} — {it['qtd_acertos']} acertos" for it in jogos_com_acerto[:50]}
                 if opcoes_map:
-                    idx_escolhido = st.selectbox(
-                        "Inspecionar no Volante:",
-                        list(opcoes_map.keys()),
-                        format_func=lambda x: opcoes_map[x]
-                    )
+                    idx_escolhido = st.selectbox("Inspecionar no Volante:", list(opcoes_map.keys()), format_func=lambda x: opcoes_map[x])
                     if idx_escolhido is not None:
                         item_ativo = next(it for it in relatorio_conf if it["num_aposta"] == idx_escolhido)
-                        render_volante_conferencia(
-                            item_ativo["jogo"],
-                            dezenas_conf,
-                            titulo=f"Aposta #{item_ativo['num_aposta']:04d} ({item_ativo['qtd_acertos']} Acertos)"
-                        )
+                        render_volante_conferencia(item_ativo["jogo"], dezenas_conf, titulo=f"Aposta #{item_ativo['num_aposta']:04d} ({item_ativo['qtd_acertos']} Acertos)")
     else:
-        st.info("Carregue um arquivo .txt ou .csv na parte superior para ativar o painel de conferência e diagnóstico.")
+        st.info("Carregue um arquivo .txt ou .csv na parte superior para ativar o painel de conferência.")
 
 # ------------------------------------------------------------------------------
 # ABA 5: HISTÓRICO & API CAIXA
