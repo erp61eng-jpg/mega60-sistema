@@ -749,8 +749,7 @@ with tab_upload:
                     st.download_button("📥 BAIXAR APOSTAS PREMIADAS (.TXT)", data=jogos_premiados_txt, file_name="mega60_premiadas.txt", mime="text/plain", use_container_width=True)
                 else:
                     st.warning("Nenhuma aposta alcançou 4, 5 ou 6 acertos.")
-
-                jogos_com_acerto = [it for it in relatorio_conf if it["qtd_acertos"] >= 4] or relatorio_conf
+                 jogos_com_acerto = [it for it in relatorio_conf if it["qtd_acertos"] >= 4] or relatorio_conf
                 opcoes_map = {it["num_aposta"]: f"Aposta #{it['num_aposta']:04d} — {it['qtd_acertos']} acertos" for it in jogos_com_acerto[:50]}
                 if opcoes_map:
                     idx_escolhido = st.selectbox("Inspecionar no Volante:", list(opcoes_map.keys()), format_func=lambda x: opcoes_map[x])
