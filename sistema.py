@@ -342,8 +342,8 @@ def render_html_seguro(conteudo_html, altura=380):
         components.html(conteudo_html, height=altura, scrolling=False)
 
 def render_cartao_sorteio_html(dezenas, titulo="CARTÃO OFICIAL DO SORTEIO"):
-    bolas_html = "".join([f"<span style='display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;background:#facc15;color:#000000;font-weight:900;font-size:26px;border-radius:50%;margin:0 8px;border:4px solid #000000;font-family:monospace;box-shadow:0 4px 6px rgba(0,0,0,0.2);'>{n:02d}</span>" for n in dezenas])
-    st.markdown(f'''<div style="background:#ffffff;border:4px solid #000000;border-radius:12px;padding:20px;margin:12px 0;text-align:center;"><div style="font-weight:900;color:#000000;font-size:20px;margin-bottom:12px;text-transform:uppercase;">🏆 {titulo}</div><div style="display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;">{bolas_html}</div></div>''', unsafe_allow_html=True)
+    bolas_html = "".join([f"<span style='display:inline-flex;align-items:center;justify-content:center;width:55px;height:55px;background:#facc15;color:#000000;font-weight:900;font-size:24px;border-radius:50%;margin:0 6px;border:4px solid #000000;font-family:monospace;box-shadow:0 4px 6px rgba(0,0,0,0.2);'>{n:02d}</span>" for n in dezenas])
+    st.markdown(f'''<div style="background:#ffffff;border:4px solid #000000;border-radius:12px;padding:16px;margin:8px 0;text-align:center;"><div style="font-weight:900;color:#000000;font-size:18px;margin-bottom:10px;text-transform:uppercase;">🏆 {titulo}</div><div style="display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px;">{bolas_html}</div></div>''', unsafe_allow_html=True)
 
 def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
     jogo_set, sorteio_set = set(jogo), set(dezenas_sorteio)
@@ -351,11 +351,11 @@ def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
     for r in range(6):
         for c in range(10):
             n = r * 10 + c + 1
-            if n in jogo_set and n in sorteio_set: celulas += f'<div style="width:48px;height:48px;background:#facc15;color:#000000;font-weight:900;border:3px solid #000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;font-size:18px;">{n:02d}<span style="font-size:12px;line-height:8px;font-weight:900;">★</span></div>'
-            elif n in jogo_set: celulas += f'<div style="width:48px;height:48px;background:#38bdf8;color:#000000;font-weight:900;border:3px solid #000000;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:18px;">{n:02d}</div>'
-            elif n in sorteio_set: celulas += f'<div style="width:48px;height:48px;background:#ffffff;color:#000000;font-weight:900;border:3px dashed #000000;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:18px;">{n:02d}</div>'
-            else: celulas += f'<div style="width:48px;height:48px;background:#ffffff;color:#000000;border:1px solid #000000;font-weight:900;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:18px;">{n:02d}</div>'
-    render_html_seguro(f'''<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;display:flex;justify-content:center;background:transparent;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:14px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,48px);gap:6px;}}</style></head><body><div class="box"><div style="font-weight:900;font-size:18px;margin-bottom:12px;color:#000000;text-align:center;">{titulo}</div><div class="grid">{celulas}</div></div></body></html>''', 430)
+            if n in jogo_set and n in sorteio_set: celulas += f'<div style="width:38px;height:38px;background:#facc15;color:#000000;font-weight:900;border:3px solid #000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;font-size:16px;">{n:02d}<span style="font-size:10px;line-height:6px;font-weight:900;">★</span></div>'
+            elif n in jogo_set: celulas += f'<div style="width:38px;height:38px;background:#38bdf8;color:#000000;font-weight:900;border:3px solid #000000;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:16px;">{n:02d}</div>'
+            elif n in sorteio_set: celulas += f'<div style="width:38px;height:38px;background:#ffffff;color:#000000;font-weight:900;border:3px dashed #000000;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:16px;">{n:02d}</div>'
+            else: celulas += f'<div style="width:38px;height:38px;background:#ffffff;color:#000000;border:1px solid #000000;font-weight:900;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:16px;">{n:02d}</div>'
+    render_html_seguro(f'''<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;display:flex;justify-content:center;background:transparent;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,38px);gap:4px;}}</style></head><body><div class="box"><div style="font-weight:900;font-size:16px;margin-bottom:10px;color:#000000;text-align:center;">{titulo}</div><div class="grid">{celulas}</div></div></body></html>''', 360)
 
 
 # ==============================================================================
@@ -412,7 +412,7 @@ def toggle_dezena(n):
 # ==============================================================================
 
 st.title("🍀 MEGA60 - PAINEL BLINDADO")
-st.caption("MATRIZ 6x10 • ALTO CONTRASTE PRETO • DISPOSIÇÃO ORGANIZADA & FONTES GIGANTES")
+st.caption("MATRIZ 6x10 • ALTO CONTRASTE PRETO • LAYOUT ORGANIZADO & FONTES GIGANTES")
 
 tab_cartela, tab_config, tab_volante, tab_upload, tab_historico = st.tabs([
     "🎟️ Cartela & Seleção Elite",
@@ -688,7 +688,7 @@ with tab_volante:
         st.info("Gere apostas para inspecionar no volante.")
 
 # ------------------------------------------------------------------------------
-# ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA (DISPOSIÇÃO CORRIGIDA)
+# ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA (LAYOUT SEPARADO E CORRIGIDO)
 # ------------------------------------------------------------------------------
 with tab_upload:
     st.subheader("📥 UPLOAD, FILTRAGEM & CONFERÊNCIA")
@@ -724,8 +724,8 @@ with tab_upload:
 
         st.divider()
         
-        # DISPOSIÇÃO ORGANIZADA: Usando blocos empilhados ou proporção ajustada (1.1 a 1.1) para evitar esmagamento
-        col_diag_left, col_conf_right = st.columns([1.0, 1.1], gap="medium")
+        # CORREÇÃO DE LAYOUT: Coluna esquerda dimensionada adequadamente para a matriz de 38px sem sobreposição
+        col_diag_left, col_conf_right = st.columns([1.25, 1.0], gap="large")
 
         with col_diag_left:
             st.markdown("### 📊 DIAGNÓSTICO DO ARQUIVO")
@@ -747,9 +747,9 @@ with tab_upload:
                     n = r * 10 + c + 1
                     freq = cnt_nums[n]
                     bg = "#ffffff" if freq == 0 else "#fef08a"
-                    celulas_up_heat += f'<div style="width:42px;height:42px;background:{bg};color:#000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;border:2px solid #000000;box-sizing:border-box;"><span style="font-size:14px;font-weight:900;">{n:02d}</span><span style="font-size:11px;font-weight:900;">{freq}x</span></div>'
+                    celulas_up_heat += f'<div style="width:38px;height:38px;background:{bg};color:#000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;border:2px solid #000000;box-sizing:border-box;"><span style="font-size:13px;font-weight:900;">{n:02d}</span><span style="font-size:10px;font-weight:900;">{freq}x</span></div>'
 
-            render_html_seguro(f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:12px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,42px);gap:5px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>', 330)
+            render_html_seguro(f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,38px);gap:4px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>', 310)
 
         with col_conf_right:
             st.markdown("### 🎯 CONFERÊNCIA DE RESULTADOS")
@@ -798,7 +798,7 @@ with tab_upload:
 # ------------------------------------------------------------------------------
 with tab_historico:
     st.subheader("BASE DE CONCURSOS OFICIAIS")
-    if st.button("🌐 SINCRONIZAR COM A CAIXA AGORA", type="primary"):
+    if st.button("🌐 SINCRONIZAR COM LA CAIXA AGORA", type="primary"):
         r = requests.get("https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena", timeout=10, verify=False)
         if r.status_code == 200:
             ult = r.json()
