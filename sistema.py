@@ -23,7 +23,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ESTILIZAÇÃO CSS GLOBAL (ALTO CONTRASTE PRETO E AMARELO - FONTES AUMENTADAS)
+# ESTILIZAÇÃO CSS GLOBAL (ALTO CONTRASTE PRETO E AMARELO - FONTES GIGANTES)
 st.markdown('''
 <style>
     html, body, [class*="css"], .stMarkdown, p, span, label, div, input, textarea, select {
@@ -46,11 +46,21 @@ st.markdown('''
         color: #000000 !important;
         border: 3px solid #000000 !important;
     }
-    /* Aumento de tamanho para métricas e contagens */
     [data-testid="stMetricValue"] {
-        font-size: 2.2rem !important;
+        font-size: 2.5rem !important;
         font-weight: 900 !important;
         color: #000000 !important;
+    }
+    .progresso-gigante {
+        font-size: 1.5rem !important;
+        font-weight: 900 !important;
+        color: #000000 !important;
+        background-color: #fef08a !important;
+        padding: 10px;
+        border: 3px solid #000000;
+        border-radius: 8px;
+        text-align: center;
+        margin: 10px 0;
     }
 </style>
 ''', unsafe_allow_html=True)
@@ -291,7 +301,7 @@ def executar_varredura_pool(pool_dezenas, cfg, bar_progresso, ticker_metricas, t
             t_ultimo_update = t_agora
             prog = min(1.0, testadas / total_combinacoes)
             bar_progresso.progress(prog)
-            ticker_metricas.markdown(f"<div style='font-size:1.4rem;font-weight:900;'><b>Processando:</b> {testadas:,} de {total_combinacoes:,} ({prog*100:.1f}%) | Aprovadas: {len(jogos_aprovados):,}</div>", unsafe_allow_html=True)
+            ticker_metricas.markdown(f"<div class='progresso-gigante'>PROCESSANDO: {testadas:,} / {total_combinacoes:,} ({prog*100:.1f}%) | APROVADAS: {len(jogos_aprovados):,}</div>", unsafe_allow_html=True)
     bar_progresso.progress(1.0)
     return jogos_aprovados
 
@@ -402,7 +412,7 @@ def toggle_dezena(n):
 # ==============================================================================
 
 st.title("🍀 MEGA60 - PAINEL BLINDADO")
-st.caption("MATRIZ 6x10 • ALTO CONTRASTE PRETO • PERSISTÊNCIA TOTAL DE FILTROS & FONTES GIGANTES")
+st.caption("MATRIZ 6x10 • ALTO CONTRASTE PRETO • DISPOSIÇÃO ORGANIZADA & FONTES GIGANTES")
 
 tab_cartela, tab_config, tab_volante, tab_upload, tab_historico = st.tabs([
     "🎟️ Cartela & Seleção Elite",
@@ -492,10 +502,10 @@ with tab_cartela:
     col_inf1, col_inf2 = st.columns([3, 1])
     qtd_sel = len(st.session_state.pool_trabalho)
     with col_inf1:
-        st.markdown(f"<div style='font-size:1.4rem;font-weight:900;background:#fef08a;border:3px solid #000000;padding:14px;border-radius:8px;'>DEZENAS ATIVAS ({qtd_sel}):<br><span style='font-size:1.2rem;'>{' - '.join([f'{n:02d}' for n in sorted(list(st.session_state.pool_trabalho))]) if qtd_sel else 'NENHUMA'}</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:1.5rem;font-weight:900;background:#fef08a;border:3px solid #000000;padding:16px;border-radius:8px;'>DEZENAS ATIVAS ({qtd_sel}):<br><span style='font-size:1.3rem;'>{' - '.join([f'{n:02d}' for n in sorted(list(st.session_state.pool_trabalho))]) if qtd_sel else 'NENHUMA'}</span></div>", unsafe_allow_html=True)
     with col_inf2:
         st.metric("Total Selecionado", f"{qtd_sel} / 60")
-        st.markdown(f"<div style='font-size:1.4rem;font-weight:900;margin-top:10px;'>Jogos Brutos: {math.comb(qtd_sel, 6) if qtd_sel >= 6 else 0:,}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:1.6rem;font-weight:900;margin-top:10px;'>Jogos Brutos: {math.comb(qtd_sel, 6) if qtd_sel >= 6 else 0:,}</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
 # ABA 2: CONFIGURAÇÃO DE FILTROS & ENGENHARIA REVERSA (COM PERSISTÊNCIA)
@@ -653,11 +663,11 @@ with tab_config:
         with st.spinner("🛠️ Processando Motor Combinatório..."):
             resultados = executar_varredura_pool(st.session_state.pool_trabalho, config_total, st.empty(), st.empty(), teto_max=None)
             st.session_state.jogos_aprovados = resultados
-            if resultados: st.markdown(f"<div style='font-size:1.4rem;font-weight:900;color:#000;'>✅ Sucesso: {len(resultados):,} apostas geradas.</div>", unsafe_allow_html=True)
+            if resultados: st.markdown(f"<div class='progresso-gigante'>✅ SUCESSO: {len(resultados):,} APOSTAS GERADAS</div>", unsafe_allow_html=True)
             else: st.warning("⚠️ Nenhuma combinação atendeu aos filtros.")
 
     if st.session_state.jogos_aprovados:
-        st.markdown(f"<div style='font-size:1.4rem;font-weight:900;'>Total Aprovado: {len(st.session_state.jogos_aprovados):,} apostas.</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='progresso-gigante'>TOTAL APROVADO: {len(st.session_state.jogos_aprovados):,} APOSTAS</div>", unsafe_allow_html=True)
         st.download_button("📥 BAIXAR JOGOS APROVADOS (.TXT)", data="\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_aprovados]), file_name="mega60_apostas_filtradas.txt", mime="text/plain", use_container_width=True)
 
 # ------------------------------------------------------------------------------
@@ -678,7 +688,7 @@ with tab_volante:
         st.info("Gere apostas para inspecionar no volante.")
 
 # ------------------------------------------------------------------------------
-# ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA
+# ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA (DISPOSIÇÃO CORRIGIDA)
 # ------------------------------------------------------------------------------
 with tab_upload:
     st.subheader("📥 UPLOAD, FILTRAGEM & CONFERÊNCIA")
@@ -694,7 +704,7 @@ with tab_upload:
     if st.session_state.jogos_upload:
         jogos_up = st.session_state.jogos_upload
         total_up = len(jogos_up)
-        st.markdown(f"<div style='font-size:1.3rem;font-weight:900;'>Arquivo Carregado: {total_up:,} apostas em memória.</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='progresso-gigante'>ARQUIVO CARREGADO: {total_up:,} APOSTAS EM MEMÓRIA</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
             st.markdown("#### ⚡ FILTRAR ARQUIVO CARREGADO")
@@ -704,7 +714,7 @@ with tab_upload:
                     with st.spinner("Filtrando apostas..."):
                         aprovados_do_arquivo = [j for j in jogos_up if validar_aposta_final_6(tuple(j), config_total)]
                         st.session_state.jogos_filtrados_upload = aprovados_do_arquivo
-                        st.markdown(f"<div style='font-size:1.3rem;font-weight:900;'>{len(aprovados_do_arquivo):,} de {total_up:,} aprovadas.</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div class='progresso-gigante'>{len(aprovados_do_arquivo):,} DE {total_up:,} APROVADAS</div>", unsafe_allow_html=True)
 
             if st.session_state.jogos_filtrados_upload:
                 qtd_flt = len(st.session_state.jogos_filtrados_upload)
@@ -713,7 +723,9 @@ with tab_upload:
                     st.download_button(f"💾 BAIXAR LOTE FILTRADO ({qtd_flt:,})", data=txt_flt, file_name=f"mega60_lote_filtrado.txt", mime="text/plain", use_container_width=True)
 
         st.divider()
-        col_diag_left, col_conf_right = st.columns([1, 1], gap="large")
+        
+        # DISPOSIÇÃO ORGANIZADA: Usando blocos empilhados ou proporção ajustada (1.1 a 1.1) para evitar esmagamento
+        col_diag_left, col_conf_right = st.columns([1.0, 1.1], gap="medium")
 
         with col_diag_left:
             st.markdown("### 📊 DIAGNÓSTICO DO ARQUIVO")
@@ -726,7 +738,7 @@ with tab_upload:
             m1, m2, m3 = st.columns(3)
             m1.metric("Total", f"{total_up:,}")
             m2.metric("Soma Média", f"{sum(somas)/len(somas):.1f}")
-            m3.metric("Mais Frequente", f"{cnt_nums.most_common(1)[0][0]:02d}")
+            m3.metric("Mais Freq.", f"{cnt_nums.most_common(1)[0][0]:02d}")
 
             st.markdown("#### 🔥 FREQUÊNCIA NA MATRIZ")
             celulas_up_heat = ""
@@ -735,9 +747,9 @@ with tab_upload:
                     n = r * 10 + c + 1
                     freq = cnt_nums[n]
                     bg = "#ffffff" if freq == 0 else "#fef08a"
-                    celulas_up_heat += f'<div style="width:40px;height:40px;background:{bg};color:#000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;border:2px solid #000000;box-sizing:border-box;"><span style="font-size:13px;font-weight:900;">{n:02d}</span><span style="font-size:10px;font-weight:900;">{freq}x</span></div>'
+                    celulas_up_heat += f'<div style="width:42px;height:42px;background:{bg};color:#000000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;border:2px solid #000000;box-sizing:border-box;"><span style="font-size:14px;font-weight:900;">{n:02d}</span><span style="font-size:11px;font-weight:900;">{freq}x</span></div>'
 
-            render_html_seguro(f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:10px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,40px);gap:4px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>', 310)
+            render_html_seguro(f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{{box-sizing:border-box;}}body{{margin:0;padding:0;background:transparent;display:flex;justify-content:center;font-family:Arial,sans-serif;}}.box{{background:#fff;border:4px solid #000000;border-radius:10px;padding:12px;width:fit-content;}}.grid{{display:grid;grid-template-columns:repeat(10,42px);gap:5px;}}</style></head><body><div class="box"><div class="grid">{celulas_up_heat}</div></div></body></html>', 330)
 
         with col_conf_right:
             st.markdown("### 🎯 CONFERÊNCIA DE RESULTADOS")
@@ -765,7 +777,7 @@ with tab_upload:
 
                 tot_prem = len(placar_conf[6]) + len(placar_conf[5]) + len(placar_conf[4])
                 if tot_prem > 0:
-                    st.markdown(f"<div style='font-size:1.3rem;font-weight:900;color:#000;'>🎉 {tot_prem} aposta(s) premiada(s) encontradas!</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='progresso-gigante'>🎉 {tot_prem} APOSTA(S) PREMIADA(S) ENCONTRADAS!</div>", unsafe_allow_html=True)
                     jogos_premiados_txt = "\n".join([f"{' '.join([f'{n:02d}' for n in it['jogo']])} | {it['qtd_acertos']} ACERTOS" for it in relatorio_conf if it["qtd_acertos"] >= 4])
                     st.download_button("📥 BAIXAR APOSTAS PREMIADAS (.TXT)", data=jogos_premiados_txt, file_name="mega60_premiadas.txt", mime="text/plain", use_container_width=True)
                 else:
