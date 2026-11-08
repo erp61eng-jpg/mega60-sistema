@@ -7,6 +7,7 @@ import math
 import time
 import re
 import json
+import os
 import io
 import traceback
 import urllib3
@@ -22,19 +23,19 @@ st.set_page_config(
     layout="wide"
 )
 
-# ESTILIZAÇÃO CSS GLOBAL (ALTO CONTRASTE PRETO E AMARELO)
+# ESTILIZAÇÃO CSS GLOBAL (ALTO CONTRASTE PRETO E AMARELO - FONTES AUMENTADAS)
 st.markdown('''
 <style>
     html, body, [class*="css"], .stMarkdown, p, span, label, div, input, textarea, select {
         color: #000000 !important;
         font-weight: 800 !important;
         font-family: Arial, Helvetica, sans-serif !important;
-        line-height: 1.5 !important;
+        line-height: 1.6 !important;
     }
     h1, h2, h3, h4 { color: #000000 !important; font-weight: 900 !important; }
     .stButton > button {
         color: #000000 !important;
-        font-size: 1.2rem !important;
+        font-size: 1.3rem !important;
         font-weight: 900 !important;
         border: 3px solid #000000 !important;
         background-color: #ffffff !important;
@@ -44,6 +45,12 @@ st.markdown('''
         background-color: #facc15 !important;
         color: #000000 !important;
         border: 3px solid #000000 !important;
+    }
+    /* Aumento de tamanho para métricas e contagens */
+    [data-testid="stMetricValue"] {
+        font-size: 2.2rem !important;
+        font-weight: 900 !important;
+        color: #000000 !important;
     }
 </style>
 ''', unsafe_allow_html=True)
@@ -108,6 +115,28 @@ PRESETS_PADRAO = {
         "primos": [3], "pares": ["2P / 4I"], "moldura": [5], "soma": (150, 190)
     }
 }
+
+ARQUIVO_PRESETS_LOCAL = "meus_filtros_salvos.json"
+
+def carregar_presets_persistidos():
+    if os.path.exists(ARQUIVO_PRESETS_LOCAL):
+        try:
+            with open(ARQUIVO_PRESETS_LOCAL, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                if isinstance(dados, dict) and dados:
+                    base = PRESETS_PADRAO.copy()
+                    base.update(dados)
+                    return base
+        except Exception:
+            pass
+    return PRESETS_PADRAO.copy()
+
+def salvar_presets_persistidos(presets):
+    try:
+        with open(ARQUIVO_PRESETS_LOCAL, "w", encoding="utf-8") as f:
+            json.dump(presets, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
 
 def calcular_metricas_elliott(historico):
     total = len(historico)
@@ -262,7 +291,7 @@ def executar_varredura_pool(pool_dezenas, cfg, bar_progresso, ticker_metricas, t
             t_ultimo_update = t_agora
             prog = min(1.0, testadas / total_combinacoes)
             bar_progresso.progress(prog)
-            ticker_metricas.markdown(f"**Processando:** `{testadas:,}` de `{total_combinacoes:,}` ({prog*100:.1f}%) | Aprovadas: `{len(jogos_aprovados):,}`")
+            ticker_metricas.markdown(f"<div style='font-size:1.4rem;font-weight:900;'><b>Processando:</b> {testadas:,} de {total_combinacoes:,} ({prog*100:.1f}%) | Aprovadas: {len(jogos_aprovados):,}</div>", unsafe_allow_html=True)
     bar_progresso.progress(1.0)
     return jogos_aprovados
 
@@ -320,7 +349,7 @@ def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
 
 
 # ==============================================================================
-# 🛠️ ETAPA 2: INICIALIZAÇÃO DE ESTADO E APLICAÇÃO DE PRESETS
+# 🛠️ ETAPA 2: INICIALIZAÇÃO DE ESTADO E PERSISTÊNCIA DE PRESETS
 # ==============================================================================
 
 if "historico" not in st.session_state:
@@ -330,8 +359,9 @@ if "historico" not in st.session_state:
 if "jogos_aprovados" not in st.session_state: st.session_state.jogos_aprovados = []
 if "jogos_upload" not in st.session_state: st.session_state.jogos_upload = []
 if "jogos_filtrados_upload" not in st.session_state: st.session_state.jogos_filtrados_upload = []
-if "presets_filtros" not in st.session_state: st.session_state.presets_filtros = PRESETS_PADRAO.copy()
-if "linha_trabalho_reverso" not in st.session_state: st.session_state.linha_trabalho_reverso = None
+
+if "presets_filtros" not in st.session_state:
+    st.session_state.presets_filtros = carregar_presets_persistidos()
 
 dados_calor = calcular_metricas_elliott(st.session_state.historico)
 ranking_elliott = sorted(dados_calor.values(), key=lambda x: x["score"], reverse=True)
@@ -372,7 +402,7 @@ def toggle_dezena(n):
 # ==============================================================================
 
 st.title("🍀 MEGA60 - PAINEL BLINDADO")
-st.caption("MATRIZ 6x10 • ALTO CONTRASTE PRETO • NÚMEROS GIGANTES & COLUNAS DE ELITE")
+st.caption("MATRIZ 6x10 • ALTO CONTRASTE PRETO • PERSISTÊNCIA TOTAL DE FILTROS & FONTES GIGANTES")
 
 tab_cartela, tab_config, tab_volante, tab_upload, tab_historico = st.tabs([
     "🎟️ Cartela & Seleção Elite",
@@ -383,7 +413,7 @@ tab_cartela, tab_config, tab_volante, tab_upload, tab_historico = st.tabs([
 ])
 
 # ------------------------------------------------------------------------------
-# ABA 1: CARTELA & SELEÇÃO ELITE (COM MELHORES COLUNAS EM DESTAQUE)
+# ABA 1: CARTELA & SELEÇÃO ELITE
 # ------------------------------------------------------------------------------
 with tab_cartela:
     with st.container(border=True):
@@ -418,8 +448,9 @@ with tab_cartela:
             if st.button("🎛️ GERAR E ATIVAR FILTRO COM ESTAS CONDICIONANTES", use_container_width=True):
                 preset_elite = extrair_filtros_de_jogo(pool_elite_ordenado, modo="flexivel")
                 st.session_state.presets_filtros["FILTRO_ELITE_CONDICIONANTES"] = preset_elite
+                salvar_presets_persistidos(st.session_state.presets_filtros)
                 aplicar_preset("FILTRO_ELITE_CONDICIONANTES")
-                st.success("Filtro ativado na Aba 2!")
+                st.success("Filtro ativado e salvo com sucesso na Aba 2!")
                 st.rerun()
 
     st.subheader("🎟️ CARTELA DE 60 NÚMEROS (MATRIZ 6x10)")
@@ -461,13 +492,13 @@ with tab_cartela:
     col_inf1, col_inf2 = st.columns([3, 1])
     qtd_sel = len(st.session_state.pool_trabalho)
     with col_inf1:
-        st.markdown(f"<div style='font-size:1.3rem;font-weight:900;background:#fef08a;border:3px solid #000000;padding:12px;border-radius:8px;'>DEZENAS ATIVAS ({qtd_sel}):<br>{' - '.join([f'{n:02d}' for n in sorted(list(st.session_state.pool_trabalho))]) if qtd_sel else 'NENHUMA'}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:1.4rem;font-weight:900;background:#fef08a;border:3px solid #000000;padding:14px;border-radius:8px;'>DEZENAS ATIVAS ({qtd_sel}):<br><span style='font-size:1.2rem;'>{' - '.join([f'{n:02d}' for n in sorted(list(st.session_state.pool_trabalho))]) if qtd_sel else 'NENHUMA'}</span></div>", unsafe_allow_html=True)
     with col_inf2:
         st.metric("Total Selecionado", f"{qtd_sel} / 60")
-        st.markdown(f"<div style='font-size:1.2rem;font-weight:900;'>Jogos Brutos: {math.comb(qtd_sel, 6) if qtd_sel >= 6 else 0:,}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:1.4rem;font-weight:900;margin-top:10px;'>Jogos Brutos: {math.comb(qtd_sel, 6) if qtd_sel >= 6 else 0:,}</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# ABA 2: CONFIGURAÇÃO DE FILTROS & ENGENHARIA REVERSA
+# ABA 2: CONFIGURAÇÃO DE FILTROS & ENGENHARIA REVERSA (COM PERSISTÊNCIA)
 # ------------------------------------------------------------------------------
 with tab_config:
     st.markdown("### 🎛️ FILTROS ESTRUTURAIS & ENGENHARIA REVERSA")
@@ -489,10 +520,11 @@ with tab_config:
                 preset_multi = extrair_filtros_multiconcursos(sorteios_alvo, modo="preciso" if "Preciso" in tolerancia_multi else "flexivel")
                 nome_salvar = nome_filtro_multi.strip() or f"FILTRO_ULT_{qtd_concursos_sel}_CONCURSOS"
                 st.session_state.presets_filtros[nome_salvar] = preset_multi
+                salvar_presets_persistidos(st.session_state.presets_filtros)
                 aplicar_preset(nome_salvar)
                 dezenas_unicas = sorted(list({n for j in sorteios_alvo for n in j}))
                 if carregar_pool_multi: st.session_state.pool_trabalho = set(dezenas_unicas)
-                st.success(f"Filtro '{nome_salvar}' ativado!")
+                st.success(f"Filtro '{nome_salvar}' ativado e salvo permanentemente!")
                 st.rerun()
     else:
         with st.container(border=True):
@@ -514,11 +546,13 @@ with tab_config:
                     preset_extraido = extrair_filtros_de_jogo(dezenas_limpas, modo="exato" if "Exato" in tipo_tolerancia else "flexivel")
                     nome_salvar = nome_filtro_novo.strip() or "MEU_NOVO_FILTRO"
                     st.session_state.presets_filtros[nome_salvar] = preset_extraido
+                    salvar_presets_persistidos(st.session_state.presets_filtros)
                     aplicar_preset(nome_salvar)
                     if substituir_pool_opcao: st.session_state.pool_trabalho = set(dezenas_limpas)
-                    st.success(f"Filtro '{nome_salvar}' ativado!")
+                    st.success(f"Filtro '{nome_salvar}' ativado e salvo permanentemente!")
                     st.rerun()
 
+    # GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO MANUAL
     with st.container(border=True):
         st.markdown("#### 💾 GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO MANUAL")
         col_puxar, col_gravar = st.columns(2)
@@ -550,7 +584,8 @@ with tab_config:
                         "soma": (int(st.session_state.get("sel_soma", (150, 190))[0]), int(st.session_state.get("sel_soma", (150, 190))[1]))
                     }
                     st.session_state.presets_filtros[nome_novo_filtro.strip()] = novo_preset
-                    st.success(f"Predefinição '{nome_novo_filtro.strip()}' gravada com sucesso!")
+                    salvar_presets_persistidos(st.session_state.presets_filtros)
+                    st.success(f"Predefinição '{nome_novo_filtro.strip()}' gravada e persistida com sucesso!")
                     st.rerun()
 
     st.divider()
@@ -618,11 +653,11 @@ with tab_config:
         with st.spinner("🛠️ Processando Motor Combinatório..."):
             resultados = executar_varredura_pool(st.session_state.pool_trabalho, config_total, st.empty(), st.empty(), teto_max=None)
             st.session_state.jogos_aprovados = resultados
-            if resultados: st.success(f"✅ Sucesso: {len(resultados):,} apostas geradas.")
+            if resultados: st.markdown(f"<div style='font-size:1.4rem;font-weight:900;color:#000;'>✅ Sucesso: {len(resultados):,} apostas geradas.</div>", unsafe_allow_html=True)
             else: st.warning("⚠️ Nenhuma combinação atendeu aos filtros.")
 
     if st.session_state.jogos_aprovados:
-        st.success(f"Total Aprovado: {len(st.session_state.jogos_aprovados):,} apostas.")
+        st.markdown(f"<div style='font-size:1.4rem;font-weight:900;'>Total Aprovado: {len(st.session_state.jogos_aprovados):,} apostas.</div>", unsafe_allow_html=True)
         st.download_button("📥 BAIXAR JOGOS APROVADOS (.TXT)", data="\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_aprovados]), file_name="mega60_apostas_filtradas.txt", mime="text/plain", use_container_width=True)
 
 # ------------------------------------------------------------------------------
@@ -659,7 +694,7 @@ with tab_upload:
     if st.session_state.jogos_upload:
         jogos_up = st.session_state.jogos_upload
         total_up = len(jogos_up)
-        st.success(f"Arquivo Carregado: {total_up:,} apostas em memória.")
+        st.markdown(f"<div style='font-size:1.3rem;font-weight:900;'>Arquivo Carregado: {total_up:,} apostas em memória.</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
             st.markdown("#### ⚡ FILTRAR ARQUIVO CARREGADO")
@@ -669,7 +704,7 @@ with tab_upload:
                     with st.spinner("Filtrando apostas..."):
                         aprovados_do_arquivo = [j for j in jogos_up if validar_aposta_final_6(tuple(j), config_total)]
                         st.session_state.jogos_filtrados_upload = aprovados_do_arquivo
-                        st.success(f"{len(aprovados_do_arquivo):,} de {total_up:,} aprovadas.")
+                        st.markdown(f"<div style='font-size:1.3rem;font-weight:900;'>{len(aprovados_do_arquivo):,} de {total_up:,} aprovadas.</div>", unsafe_allow_html=True)
 
             if st.session_state.jogos_filtrados_upload:
                 qtd_flt = len(st.session_state.jogos_filtrados_upload)
@@ -730,7 +765,7 @@ with tab_upload:
 
                 tot_prem = len(placar_conf[6]) + len(placar_conf[5]) + len(placar_conf[4])
                 if tot_prem > 0:
-                    st.success(f"🎉 {tot_prem} aposta(s) premiada(s) encontradas!")
+                    st.markdown(f"<div style='font-size:1.3rem;font-weight:900;color:#000;'>🎉 {tot_prem} aposta(s) premiada(s) encontradas!</div>", unsafe_allow_html=True)
                     jogos_premiados_txt = "\n".join([f"{' '.join([f'{n:02d}' for n in it['jogo']])} | {it['qtd_acertos']} ACERTOS" for it in relatorio_conf if it["qtd_acertos"] >= 4])
                     st.download_button("📥 BAIXAR APOSTAS PREMIADAS (.TXT)", data=jogos_premiados_txt, file_name="mega60_premiadas.txt", mime="text/plain", use_container_width=True)
                 else:
