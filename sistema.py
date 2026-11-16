@@ -358,7 +358,7 @@ def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
 
 
 # ==============================================================================
-# 🎨 NOVO MÓDULO: RAIO-X GEOMÉTRICO & VOLANTE PERSONALIZADO
+# 🎨 MÓDULO: RAIO-X GEOMÉTRICO & VOLANTE PERSONALIZADO COM IMPRESSÃO
 # ==============================================================================
 def render_volante_raiox_detalhado(jogo_6):
     jogo_set = set(jogo_6)
@@ -751,16 +751,57 @@ with tab_volante:
         st.info("Gere apostas para inspecionar no volante.")
 
 # ------------------------------------------------------------------------------
-# ABA 4: RAIO-X PERSONALIZADO
+# ABA 4: RAIO-X PERSONALIZADO & IMPRESSÃO
 # ------------------------------------------------------------------------------
 with tab_raiox:
-    st.subheader("🎨 INSPEÇÃO E RAIO-X PERSONALIZADO")
-    entrada_usuario = st.text_input("Digite 6 dezenas separadas por espaço:", value="05 16 23 41 48 59")
+    st.subheader("🎨 INSPEÇÃO, RAIO-X PERSONALIZADO & IMPRESSÃO")
+    entrada_usuario = st.text_input("Digite 6 dezenas separadas por espaço:", value="05 16 23 41 48 59", key="input_raiox_custom")
     nums_usuario = [int(x) for x in re.findall(r"\b\d+\b", entrada_usuario)]
     jogo_validado = sorted(list(set([n for n in nums_usuario if 1 <= n <= 60])))
     
     if len(jogo_validado) == 6:
         render_volante_raiox_detalhado(jogo_validado)
+        
+        st.divider()
+        
+        col_imp1, col_imp2 = st.columns(2)
+        with col_imp1:
+            if st.button("🖨️ IMPRIMIR ESTA INSPEÇÃO / RAIO-X", use_container_width=True, type="primary"):
+                components.html("""
+                    <script>
+                        window.parent.print();
+                    </script>
+                """, height=0)
+        with col_imp2:
+            relatorio_txt = f"""========================================
+MEGA60 - RELATÓRIO DE INSPEÇÃO & RAIO-X
+========================================
+Dezenas: {' - '.join([f'{n:02d}' for n in jogo_validado])}
+Soma Total: {sum(jogo_validado)}
+Pares/Ímpares: {sum(1 for n in jogo_validado if PROPS[n]["is_par"])}P / {6-sum(1 for n in jogo_validado if PROPS[n]["is_par"])}I
+Primos: {sum(1 for n in jogo_validado if PROPS[n]["is_primo"])}
+Moldura: {sum(1 for n in jogo_validado if PROPS[n]["is_moldura"])}
+----------------------------------------
+DETALHAMENTO ESTRUTURAL:
+"""
+            for n in jogo_validado:
+                p = PROPS[n]
+                relatorio_txt += f"Dezena {n:02d} -> Linha: L{p['r']+1} | Coluna: C{p['c']+1} | Diag.Cresc: DC{p['dc']+1} | Diag.Decresc: DD{p['dd']+1}\n"
+            
+            st.download_button(
+                "📥 BAIXAR RELATÓRIO EM TXT", 
+                data=relatorio_txt, 
+                file_name=f"raiox_mega60_{'_'.join([f'{n:02d}' for n in jogo_validado])}.txt", 
+                mime="text/plain", 
+                use_container_width=True
+            )
+            
+        if st.button("⭐ ADICIONAR ESTE JOGO À LISTA DE APROVADOS", use_container_width=True):
+            if jogo_validado not in st.session_state.jogos_aprovados:
+                st.session_state.jogos_aprovados.append(jogo_validado)
+                st.success("Jogo adicionado com sucesso à lista de aprovados!")
+            else:
+                st.info("Este jogo já consta na lista de aprovados.")
     else:
         st.warning("⚠️ Por favor, digite exatamente 6 dezenas válidas entre 01 e 60.")
 
