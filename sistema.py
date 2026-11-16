@@ -358,10 +358,10 @@ def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
 
 
 # ==============================================================================
-# 🎨 MÓDULO: RAIO-X GEOMÉTRICO & VOLANTE PERSONALIZADO COM IMPRESSÃO
+# 🎨 MÓDULO: RAIO-X GEOMÉTRICO & RANKING TOP 10 DA AMOSTRA (ATÉ 30 DEZENAS)
 # ==============================================================================
-def render_volante_raiox_detalhado(jogo_6):
-    jogo_set = set(jogo_6)
+def render_volante_raiox_detalhado(lista_dezenas, dados_calor):
+    jogo_set = set(lista_dezenas)
     celulas_html = ""
     for r in range(6):
         for c in range(10):
@@ -387,7 +387,7 @@ def render_volante_raiox_detalhado(jogo_6):
     grid_container = f'''
     <div style="background:#ffffff; border:4px solid #000000; border-radius:12px; padding:16px; width:fit-content; margin:0 auto; box-shadow: 4px 4px 0px #000000;">
         <div style="font-weight:900; font-size:18px; color:#000000; text-align:center; margin-bottom:12px; text-transform:uppercase;">
-            🎟️ VOLANTE RAIO-X 6x10 (ALTO CONTRASTE)
+            🎟️ VOLANTE RAIO-X 6x10 ({len(lista_dezenas)} DEZENAS MARCADAS)
         </div>
         <div style="display:grid; grid-template-columns:repeat(10, 52px); gap:6px;">
             {celulas_html}
@@ -396,32 +396,34 @@ def render_volante_raiox_detalhado(jogo_6):
     '''
     render_html_seguro(grid_container, 440)
 
-    st.markdown("### 📋 DETALHAMENTO ESTRUTURAL DAS DEZENAS")
+    st.markdown("### 📋 DETALHAMENTO ESTRUTURAL DA AMOSTRA")
     dados_tabela = []
-    for n in sorted(jogo_6):
+    for n in sorted(lista_dezenas):
         p = PROPS[n]
+        sc = dados_calor[n]["score"]
         dados_tabela.append({
             "Dezena": f"{n:02d}",
+            "Score Elliott": f"{sc:.1f}p",
             "Linha": f"L{p['r']+1}",
             "Coluna": f"C{p['c']+1}",
             "Diag. Cresc (/)": f"DC{p['dc']+1}",
             "Diag. Decresc (\\)": f"DD{p['dd']+1}",
             "Primo?": "Sim ⭐" if p["is_primo"] else "Não",
-            "Par/Ímpar": "Par 🟢" if p["is_par"] else "Ímpar 🔵",
-            "Moldura?": "Sim 🖼️" if p["is_moldura"] else "Centro"
+            "Par/Ímpar": "Par 🟢" if p["is_par"] else "Ímpar 🔵"
         })
     st.dataframe(dados_tabela, use_container_width=True)
     
-    tot_pares = sum(1 for n in jogo_6 if PROPS[n]["is_par"])
-    tot_primos = sum(1 for n in jogo_6 if PROPS[n]["is_primo"])
-    tot_moldura = sum(1 for n in jogo_6 if PROPS[n]["is_moldura"])
-    soma_jogo = sum(jogo_6)
+    tot_pares = sum(1 for n in lista_dezenas if PROPS[n]["is_par"])
+    tot_impares = len(lista_dezenas) - tot_pares
+    tot_primos = sum(1 for n in lista_dezenas if PROPS[n]["is_primo"])
+    tot_moldura = sum(1 for n in lista_dezenas if PROPS[n]["is_moldura"])
+    soma_total = sum(lista_dezenas)
     
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    col_m1.metric("Soma Total", f"{soma_jogo}")
-    col_m2.metric("Pares / Ímpares", f"{tot_pares}P / {6-tot_pares}I")
+    col_m1.metric("Soma Total", f"{soma_total}")
+    col_m2.metric("Pares / Ímpares", f"{tot_pares}P / {tot_impares}I")
     col_m3.metric("Primos", f"{tot_primos}")
-    col_m4.metric("Moldura / Centro", f"{tot_moldura}M / {6-tot_moldura}C")
+    col_m4.metric("Moldura / Centro", f"{tot_moldura}M / {len(lista_dezenas)-tot_moldura}C")
 
 
 # ==============================================================================
@@ -484,7 +486,7 @@ tab_cartela, tab_config, tab_volante, tab_raiox, tab_upload, tab_historico = st.
     "🎟️ Cartela & Seleção Elite",
     "🎛️ Filtros & Engenharia Reversa",
     "🗺️ Volante & Raio-X",
-    "🎨 Raio-X Personalizado",
+    "🎨 Raio-X Personalizado (Até 30)",
     "📥 Upload & Filtragem Sucessiva",
     "📊 Histórico & API Caixa"
 ])
@@ -751,59 +753,91 @@ with tab_volante:
         st.info("Gere apostas para inspecionar no volante.")
 
 # ------------------------------------------------------------------------------
-# ABA 4: RAIO-X PERSONALIZADO & IMPRESSÃO
+# ABA 4: RAIO-X PERSONALIZADO (ATÉ 30) & TOP 10 MELHORES RESULTADOS
 # ------------------------------------------------------------------------------
 with tab_raiox:
-    st.subheader("🎨 INSPEÇÃO, RAIO-X PERSONALIZADO & IMPRESSÃO")
-    entrada_usuario = st.text_input("Digite 6 dezenas separadas por espaço:", value="05 16 23 41 48 59", key="input_raiox_custom")
-    nums_usuario = [int(x) for x in re.findall(r"\b\d+\b", entrada_usuario)]
-    jogo_validado = sorted(list(set([n for n in nums_usuario if 1 <= n <= 60])))
+    st.subheader("🎨 RAIO-X PERSONALIZADO (ATÉ 30 DEZENAS) & TOP 10 SUGESTÕES")
+    st.markdown("Digite de 6 a 30 dezenas separadas por espaço para inspecionar o fechamento geométrico e gerar os **10 melhores jogos** calculados por Elliott e equilíbrio estatístico:")
     
-    if len(jogo_validado) == 6:
-        render_volante_raiox_detalhado(jogo_validado)
+    entrada_usuario = st.text_input("Insira as dezenas (6 a 30 números):", value="05 09 16 23 33 40 41 48 52 59", key="input_raiox_custom_30")
+    nums_usuario = [int(x) for x in re.findall(r"\b\d+\b", entrada_usuario)]
+    amostra_validada = sorted(list(set([n for n in nums_usuario if 1 <= n <= 60])))
+    
+    if 6 <= len(amostra_validada) <= 30:
+        render_volante_raiox_detalhado(amostra_validada, dados_calor)
         
         st.divider()
+        st.markdown("### 🏆 OS 10 MELHORES JOGOS (6 NÚMEROS) DESSA AMOSTRA")
+        
+        # Algoritmo de Pontuação e Ranking Top 10 para a Amostra
+        combos_amostra = list(combinations(amostra_validada, 6))
+        jogos_pontuados = []
+        
+        for c in combos_amostra:
+            c_list = sorted(list(c))
+            soma_c = sum(c_list)
+            # Pontuação Elliott combinada
+            score_elliott_total = sum(dados_calor[n]["score"] for n in c_list)
+            # Penalidade de soma fora da faixa ideal da Mega-Sena (140 a 220)
+            penalidade_soma = abs(soma_c - 180) * 0.1
+            # Bônus por equilíbrio par/ímpar (3P/3I ou 2P/4I ou 4P/2I)
+            pares_c = sum(1 for n in c_list if PAR_LOOKUP[n])
+            bonus_par = 10.0 if pares_c in [2, 3, 4] else 0.0
+            
+            score_final = score_elliott_total + bonus_par - penalidade_soma
+            jogos_pontuados.append((score_final, c_list, soma_c, pares_c))
+            
+        # Ordena do maior score para o menor
+        jogos_pontuados.sort(key=lambda x: x[0], reverse=True)
+        top_10_jogos = jogos_pontuados[:10]
+        
+        # Exibe tabela do Top 10
+        tabela_top10 = []
+        for idx, (scr, jogo, sm, pr) in enumerate(top_10_jogos):
+            tabela_top10.append({
+                "Ranking": f"#{idx+1:02d}",
+                "Dezenas Sugeridas": " - ".join([f"{n:02d}" for n in jogo]),
+                "Score Total": f"{scr:.1f}p",
+                "Soma": sm,
+                "Pares / Ímpares": f"{pr}P / {6-pr}I"
+            })
+        st.dataframe(tabela_top10, use_container_width=True)
         
         col_imp1, col_imp2 = st.columns(2)
         with col_imp1:
-            if st.button("🖨️ IMPRIMIR ESTA INSPEÇÃO / RAIO-X", use_container_width=True, type="primary"):
+            if st.button("🖨️ IMPRIMIR ESTE RAIO-X & TOP 10", use_container_width=True, type="primary"):
                 components.html("""
                     <script>
                         window.parent.print();
                     </script>
                 """, height=0)
         with col_imp2:
-            relatorio_txt = f"""========================================
-MEGA60 - RELATÓRIO DE INSPEÇÃO & RAIO-X
+            top10_txt = f"""========================================
+MEGA60 - TOP 10 SUGESTÕES DA AMOSTRA
 ========================================
-Dezenas: {' - '.join([f'{n:02d}' for n in jogo_validado])}
-Soma Total: {sum(jogo_validado)}
-Pares/Ímpares: {sum(1 for n in jogo_validado if PROPS[n]["is_par"])}P / {6-sum(1 for n in jogo_validado if PROPS[n]["is_par"])}I
-Primos: {sum(1 for n in jogo_validado if PROPS[n]["is_primo"])}
-Moldura: {sum(1 for n in jogo_validado if PROPS[n]["is_moldura"])}
+Dezenas Base: {' - '.join([f'{n:02d}' for n in amostra_validada])}
 ----------------------------------------
-DETALHAMENTO ESTRUTURAL:
 """
-            for n in jogo_validado:
-                p = PROPS[n]
-                relatorio_txt += f"Dezena {n:02d} -> Linha: L{p['r']+1} | Coluna: C{p['c']+1} | Diag.Cresc: DC{p['dc']+1} | Diag.Decresc: DD{p['dd']+1}\n"
+            for idx, (scr, jogo, sm, pr) in enumerate(top_10_jogos):
+                top10_txt += f"#{idx+1:02d} -> {' '.join([f'{n:02d}' for n in jogo])} | Soma: {sm} | Score: {scr:.1f}p\n"
             
             st.download_button(
-                "📥 BAIXAR RELATÓRIO EM TXT", 
-                data=relatorio_txt, 
-                file_name=f"raiox_mega60_{'_'.join([f'{n:02d}' for n in jogo_validado])}.txt", 
+                "📥 BAIXAR TOP 10 EM TXT", 
+                data=top10_txt, 
+                file_name=f"top10_sugestoes_amostra.txt", 
                 mime="text/plain", 
                 use_container_width=True
             )
             
-        if st.button("⭐ ADICIONAR ESTE JOGO À LISTA DE APROVADOS", use_container_width=True):
-            if jogo_validado not in st.session_state.jogos_aprovados:
-                st.session_state.jogos_aprovados.append(jogo_validado)
-                st.success("Jogo adicionado com sucesso à lista de aprovados!")
-            else:
-                st.info("Este jogo já consta na lista de aprovados.")
+        if st.button("⭐ ADICIONAR TODOS OS 10 AO JOGOS APROVADOS", use_container_width=True):
+            adicionados = 0
+            for _, jogo, _, _ in top_10_jogos:
+                if jogo not in st.session_state.jogos_aprovados:
+                    st.session_state.jogos_aprovados.append(jogo)
+                    adicionados += 1
+            st.success(f"{adicionados} novos jogos adicionados com sucesso à lista de aprovados!")
     else:
-        st.warning("⚠️ Por favor, digite exatamente 6 dezenas válidas entre 01 e 60.")
+        st.warning("⚠️ Por favor, digite entre 6 e 30 dezenas válidas (entre 01 e 60) para gerar o Raio-X e o Top 10.")
 
 # ------------------------------------------------------------------------------
 # ABA 5: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA
