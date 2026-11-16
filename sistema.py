@@ -284,7 +284,6 @@ def validar_aposta_final_6(jogo, cfg):
     return True
 
 def executar_varredura_pool(pool_dezenas, cfg, bar_progresso, ticker_metricas, teto_max=None):
-    t_inicio = time.time()
     dezenas_candidatas = sorted(list(pool_dezenas))
     if len(dezenas_candidatas) < 6: return []
     total_combinacoes = math.comb(len(dezenas_candidatas), 6)
@@ -359,6 +358,73 @@ def render_volante_conferencia(jogo, dezenas_sorteio, titulo=""):
 
 
 # ==============================================================================
+# 🎨 NOVO MÓDULO: RAIO-X GEOMÉTRICO & VOLANTE PERSONALIZADO
+# ==============================================================================
+def render_volante_raiox_detalhado(jogo_6):
+    jogo_set = set(jogo_6)
+    celulas_html = ""
+    for r in range(6):
+        for c in range(10):
+            n = r * 10 + c + 1
+            prop = PROPS[n]
+            esta_no_jogo = n in jogo_set
+            bg_color = "#facc15" if esta_no_jogo else "#ffffff"
+            text_color = "#000000"
+            border_style = "4px solid #000000" if esta_no_jogo else "2px solid #000000"
+            font_weight = "900"
+            
+            badge_extra = ""
+            if esta_no_jogo:
+                badge_extra = f'<span style="font-size:9px; background:#000; color:#facc15; padding:1px 3px; border-radius:3px; margin-top:2px;">L{prop["r"]+1}C{prop["c"]+1}</span>'
+
+            celulas_html += f'''
+            <div style="width:52px; height:52px; background:{bg_color}; color:{text_color}; border:{border_style}; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Arial, sans-serif; box-shadow: 2px 2px 0px #000000;">
+                <span style="font-size:18px; font-weight:{font_weight};">{n:02d}</span>
+                {badge_extra}
+            </div>
+            '''
+
+    grid_container = f'''
+    <div style="background:#ffffff; border:4px solid #000000; border-radius:12px; padding:16px; width:fit-content; margin:0 auto; box-shadow: 4px 4px 0px #000000;">
+        <div style="font-weight:900; font-size:18px; color:#000000; text-align:center; margin-bottom:12px; text-transform:uppercase;">
+            🎟️ VOLANTE RAIO-X 6x10 (ALTO CONTRASTE)
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(10, 52px); gap:6px;">
+            {celulas_html}
+        </div>
+    </div>
+    '''
+    render_html_seguro(grid_container, 440)
+
+    st.markdown("### 📋 DETALHAMENTO ESTRUTURAL DAS DEZENAS")
+    dados_tabela = []
+    for n in sorted(jogo_6):
+        p = PROPS[n]
+        dados_tabela.append({
+            "Dezena": f"{n:02d}",
+            "Linha": f"L{p['r']+1}",
+            "Coluna": f"C{p['c']+1}",
+            "Diag. Cresc (/)": f"DC{p['dc']+1}",
+            "Diag. Decresc (\\)": f"DD{p['dd']+1}",
+            "Primo?": "Sim ⭐" if p["is_primo"] else "Não",
+            "Par/Ímpar": "Par 🟢" if p["is_par"] else "Ímpar 🔵",
+            "Moldura?": "Sim 🖼️" if p["is_moldura"] else "Centro"
+        })
+    st.dataframe(dados_tabela, use_container_width=True)
+    
+    tot_pares = sum(1 for n in jogo_6 if PROPS[n]["is_par"])
+    tot_primos = sum(1 for n in jogo_6 if PROPS[n]["is_primo"])
+    tot_moldura = sum(1 for n in jogo_6 if PROPS[n]["is_moldura"])
+    soma_jogo = sum(jogo_6)
+    
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    col_m1.metric("Soma Total", f"{soma_jogo}")
+    col_m2.metric("Pares / Ímpares", f"{tot_pares}P / {6-tot_pares}I")
+    col_m3.metric("Primos", f"{tot_primos}")
+    col_m4.metric("Moldura / Centro", f"{tot_moldura}M / {6-tot_moldura}C")
+
+
+# ==============================================================================
 # 🛠️ ETAPA 2: INICIALIZAÇÃO DE ESTADO E PERSISTÊNCIA DE PRESETS
 # ==============================================================================
 
@@ -408,16 +474,17 @@ def toggle_dezena(n):
 
 
 # ==============================================================================
-# 🛠️ ETAPA 3: INTERFACE DO APLICATIVO (ABAS 1 A 5)
+# 🛠️ ETAPA 3: INTERFACE DO APLICATIVO (ABAS 1 A 6)
 # ==============================================================================
 
 st.title("🍀 MEGA60 - PAINEL BLINDADO")
 st.caption("MATRIZ 6x10 • ALTO CONTRASTE PRETO • LAYOUT ORGANIZADO & FONTES GIGANTES")
 
-tab_cartela, tab_config, tab_volante, tab_upload, tab_historico = st.tabs([
+tab_cartela, tab_config, tab_volante, tab_raiox, tab_upload, tab_historico = st.tabs([
     "🎟️ Cartela & Seleção Elite",
     "🎛️ Filtros & Engenharia Reversa",
     "🗺️ Volante & Raio-X",
+    "🎨 Raio-X Personalizado",
     "📥 Upload & Filtragem Sucessiva",
     "📊 Histórico & API Caixa"
 ])
@@ -508,7 +575,7 @@ with tab_cartela:
         st.markdown(f"<div style='font-size:1.6rem;font-weight:900;margin-top:10px;'>Jogos Brutos: {math.comb(qtd_sel, 6) if qtd_sel >= 6 else 0:,}</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# ABA 2: CONFIGURAÇÃO DE FILTROS & ENGENHARIA REVERSA (COM PERSISTÊNCIA)
+# ABA 2: CONFIGURAÇÃO DE FILTROS & ENGENHARIA REVERSA
 # ------------------------------------------------------------------------------
 with tab_config:
     st.markdown("### 🎛️ FILTROS ESTRUTURAIS & ENGENHARIA REVERSA")
@@ -562,7 +629,6 @@ with tab_config:
                     st.success(f"Filtro '{nome_salvar}' ativado e salvo permanentemente!")
                     st.rerun()
 
-    # GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO MANUAL
     with st.container(border=True):
         st.markdown("#### 💾 GERENCIADOR DE PREDEFINIÇÕES & GRAVAÇÃO MANUAL")
         col_puxar, col_gravar = st.columns(2)
@@ -678,17 +744,28 @@ with tab_volante:
     jogos_exibir = st.session_state.jogos_aprovados or st.session_state.jogos_upload
     if jogos_exibir:
         total_jogos = len(jogos_exibir)
-        if total_jogos > 1:
-            sel_idx = st.slider("Aposta para inspecionar:", 1, total_jogos, 1)
-        else:
-            sel_idx = 1
+        sel_idx = st.slider("Aposta para inspecionar:", 1, total_jogos, 1) if total_jogos > 1 else 1
         jogo_ativo = sorted(jogos_exibir[sel_idx - 1])
         render_volante_conferencia(jogo_ativo, [], f"JOGO #{sel_idx:04d}: {' - '.join([f'{n:02d}' for n in jogo_ativo])}")
     else:
         st.info("Gere apostas para inspecionar no volante.")
 
 # ------------------------------------------------------------------------------
-# ABA 4: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA (LAYOUT SEPARADO E CORRIGIDO)
+# ABA 4: RAIO-X PERSONALIZADO
+# ------------------------------------------------------------------------------
+with tab_raiox:
+    st.subheader("🎨 INSPEÇÃO E RAIO-X PERSONALIZADO")
+    entrada_usuario = st.text_input("Digite 6 dezenas separadas por espaço:", value="05 16 23 41 48 59")
+    nums_usuario = [int(x) for x in re.findall(r"\b\d+\b", entrada_usuario)]
+    jogo_validado = sorted(list(set([n for n in nums_usuario if 1 <= n <= 60])))
+    
+    if len(jogo_validado) == 6:
+        render_volante_raiox_detalhado(jogo_validado)
+    else:
+        st.warning("⚠️ Por favor, digite exatamente 6 dezenas válidas entre 01 e 60.")
+
+# ------------------------------------------------------------------------------
+# ABA 5: UPLOAD & FILTRAGEM SUCESSIVA & CONFERÊNCIA
 # ------------------------------------------------------------------------------
 with tab_upload:
     st.subheader("📥 UPLOAD, FILTRAGEM & CONFERÊNCIA")
@@ -698,8 +775,7 @@ with tab_upload:
         conteudo = arquivo_enviado.read()
         jogos_carregados, invalidos = processar_arquivo_upload(conteudo)
         st.session_state.jogos_upload = jogos_carregados
-        if invalidos > 0:
-            st.warning(f"⚠️ {invalidos} linha(s) ignoradas.")
+        if invalidos > 0: st.warning(f"⚠️ {invalidos} linha(s) ignoradas.")
 
     if st.session_state.jogos_upload:
         jogos_up = st.session_state.jogos_upload
@@ -720,11 +796,9 @@ with tab_upload:
                 qtd_flt = len(st.session_state.jogos_filtrados_upload)
                 txt_flt = "\n".join([" ".join([f"{n:02d}" for n in sorted(j)]) for j in st.session_state.jogos_filtrados_upload])
                 with c_flt2:
-                    st.download_button(f"💾 BAIXAR LOTE FILTRADO ({qtd_flt:,})", data=txt_flt, file_name=f"mega60_lote_filtrado.txt", mime="text/plain", use_container_width=True)
+                    st.download_button(f"💾 BAIXAR LOTE FILTRADO ({qtd_flt:,})", data=txt_flt, file_name=f"mega60_lote_filtrado.txt", mime="application/json", use_container_width=True)
 
         st.divider()
-        
-        # CORREÇÃO DE LAYOUT: Coluna esquerda dimensionada adequadamente para a matriz de 38px sem sobreposição
         col_diag_left, col_conf_right = st.columns([1.25, 1.0], gap="large")
 
         with col_diag_left:
@@ -794,7 +868,7 @@ with tab_upload:
         st.info("Carregue um arquivo .txt ou .csv na parte superior para ativar o painel de conferência.")
 
 # ------------------------------------------------------------------------------
-# ABA 5: HISTÓRICO & API CAIXA
+# ABA 6: HISTÓRICO & API CAIXA
 # ------------------------------------------------------------------------------
 with tab_historico:
     st.subheader("BASE DE CONCURSOS OFICIAIS")
